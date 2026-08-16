@@ -8,9 +8,18 @@
     <p><strong>Role:</strong> <%= currentUser.role %></p>
     <p><strong>Joined:</strong> <%= currentUser.createdAt.toDateString() %></p>
 
-    <p style="color: #666; font-size: 0.9rem; margin-top: 24px;">
-      This is a temporary Phase 1 verification page. It will become the
-      real profile/dashboard system in a later phase.
-    </p>
+    <% if (currentUser.role === "guest") { %>
+      <div style="margin-top: 20px; padding: 16px; background: #e3f0e9; border-radius: var(--radius);">
+        <p style="margin: 0 0 12px 0;"><strong>Want to list your property on Nestora?</strong></p>
+        <form action="/become-host" method="POST">
+          <button type="submit" class="btn btn-primary">Become a Host</button>
+        </form>
+      </div>
+    <% } else if (currentUser.role === "host" || currentUser.role === "admin") { %>
+      <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="/listings/my" class="btn btn-primary">My Properties</a>
+        <a href="/listings/new" class="btn btn-secondary">+ Add Property</a>
+      </div>
+    <% } %>
   </div>
 </section>

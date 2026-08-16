@@ -5,6 +5,7 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const ejsMate = require("ejs-mate");
+const methodOverride = require("method-override");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
@@ -12,6 +13,7 @@ const passport = require("./config/passport");
 const connectDB = require("./utils/db");
 const indexRouter = require("./routes/index");
 const authRouter = require("./routes/auth");
+const listingsRouter = require("./routes/listings");
 const { notFound, errorHandler } = require("./middleware/error");
 
 const app = express();
@@ -26,6 +28,10 @@ app.set("views", path.join(__dirname, "views"));
 // Parse form submissions.
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// method-override lets HTML forms send PUT and DELETE requests via a
+// query-string flag, e.g. POST /listings/123?_method=DELETE.
+app.use(methodOverride("_method"));
 
 // Serve static assets (CSS/JS) from /public.
 app.use(express.static(path.join(__dirname, "public")));
@@ -76,11 +82,7 @@ app.use((req, res, next) => {
 
 app.use("/", indexRouter);
 app.use("/", authRouter);
-
-// Basic 404 handler - refined further in the error-handling step.
-app.use((req, res) => {
-  res.status(404).send("Page not found.");
-});
+app.use("/listings", listingsRouter);
 
 // Any request that didn't match a route above falls through to here.
 app.use(notFound);

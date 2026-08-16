@@ -1,0 +1,113 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 40px 24px;">
+  <div class="card" style="max-width: 640px; margin: 0 auto;">
+    <h1 style="color: var(--forest-green); margin-top: 0; text-align: center;">Edit Property</h1>
+
+    <form action="/listings/<%= listing._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
+
+      <%# ---------- Title ---------- %>
+      <div class="form-group">
+        <label for="title">Title <span class="required">*</span></label>
+        <input type="text" id="title" name="title" required value="<%= listing.title %>" />
+      </div>
+
+      <%# ---------- Description ---------- %>
+      <div class="form-group">
+        <label for="description">Description <span class="required">*</span></label>
+        <textarea id="description" name="description" rows="4" required><%= listing.description %></textarea>
+      </div>
+
+      <%# ---------- Price ---------- %>
+      <div class="form-group">
+        <label for="price">Price per night (₹) <span class="required">*</span></label>
+        <input type="number" id="price" name="price" min="0" step="1" required value="<%= listing.price %>" />
+      </div>
+
+      <%# ---------- Location / Country ---------- %>
+      <div class="form-row">
+        <div class="form-group" style="flex: 1;">
+          <label for="location">Location <span class="required">*</span></label>
+          <input type="text" id="location" name="location" required value="<%= listing.location %>" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="country">Country <span class="required">*</span></label>
+          <input type="text" id="country" name="country" required value="<%= listing.country %>" />
+        </div>
+      </div>
+
+      <%# ---------- Property type ---------- %>
+      <div class="form-group">
+        <label for="propertyType">Property Type <span class="required">*</span></label>
+        <select id="propertyType" name="propertyType" required>
+          <option value="">Select type…</option>
+          <% const types = ["hotel", "villa", "resort", "cottage", "apartment", "homestay"]; %>
+          <% types.forEach(function(t) { %>
+            <option value="<%= t %>" <%= listing.propertyType === t ? "selected" : "" %>><%= t.charAt(0).toUpperCase() + t.slice(1) %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <%# ---------- Category ---------- %>
+      <div class="form-group">
+        <label for="category">Category <small>(optional)</small></label>
+        <input type="text" id="category" name="category" value="<%= listing.category || '' %>" />
+      </div>
+
+      <%# ---------- Guests / Bedrooms / Bathrooms ---------- %>
+      <div class="form-row">
+        <div class="form-group" style="flex: 1;">
+          <label for="maxGuests">Max Guests <span class="required">*</span></label>
+          <input type="number" id="maxGuests" name="maxGuests" min="1" required value="<%= listing.maxGuests %>" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="bedrooms">Bedrooms</label>
+          <input type="number" id="bedrooms" name="bedrooms" min="0" value="<%= listing.bedrooms %>" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="bathrooms">Bathrooms</label>
+          <input type="number" id="bathrooms" name="bathrooms" min="0" value="<%= listing.bathrooms %>" />
+        </div>
+      </div>
+
+      <%# ---------- Amenities ---------- %>
+      <div class="form-group">
+        <label for="amenities">Amenities <small>(comma-separated)</small></label>
+        <input type="text" id="amenities" name="amenities" value="<%= listing.amenities.join(', ') %>" />
+      </div>
+
+      <%# ---------- Existing images ---------- %>
+      <% if (listing.images && listing.images.length > 0) { %>
+        <div class="form-group">
+          <label>Current Images <small>(check to remove)</small></label>
+          <div class="edit-images-grid">
+            <% listing.images.forEach(function(img, i) { %>
+              <label class="edit-image-item">
+                <img src="<%= img %>" alt="Image <%= i + 1 %>" />
+                <div>
+                  <input type="checkbox" name="deleteImages" value="<%= img %>" />
+                  Remove
+                </div>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+      <%# ---------- Upload new images ---------- %>
+      <div class="form-group">
+        <label for="images">Add More Images <small>(up to 5)</small></label>
+        <input type="file" id="images" name="images" multiple accept="image/*" />
+        <div id="image-preview" class="image-preview"></div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+        Save Changes
+      </button>
+    </form>
+
+    <a href="/listings/<%= listing._id %>" style="display: block; text-align: center; margin-top: 16px; color: var(--terracotta); font-weight: 600;">
+      Cancel
+    </a>
+  </div>
+</section>

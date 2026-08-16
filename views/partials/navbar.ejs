@@ -8,6 +8,12 @@
           once Passport middleware is added later in Phase 1. Until then
           this always falls through to the logged-out links below. %>
       <% if (typeof currentUser !== "undefined" && currentUser) { %>
+
+        <% if (currentUser.role === "host" || currentUser.role === "admin") { %>
+          <li><a href="/listings/new">Add Property</a></li>
+          <li><a href="/listings/my">My Properties</a></li>
+        <% } %>
+
         <li><a href="/profile">Hi, <%= currentUser.username %></a></li>
         <li>
           <form action="/logout" method="POST" style="display:inline">

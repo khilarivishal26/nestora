@@ -1,0 +1,51 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 40px 24px;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 28px;">
+    <h1 style="color: var(--forest-green); margin: 0;">
+      <%= typeof isMyPage !== "undefined" && isMyPage ? "My Properties" : "Explore Stays" %>
+    </h1>
+
+    <% if (typeof currentUser !== "undefined" && currentUser && (currentUser.role === "host" || currentUser.role === "admin")) { %>
+      <a href="/listings/new" class="btn btn-primary">+ Add Property</a>
+    <% } %>
+  </div>
+
+  <% if (listings.length === 0) { %>
+    <div class="card" style="text-align: center; padding: 48px 24px;">
+      <p style="font-size: 1.1rem; color: #666;">No properties found.</p>
+      <% if (typeof isMyPage !== "undefined" && isMyPage) { %>
+        <a href="/listings/new" class="btn btn-primary" style="margin-top: 12px;">List your first property</a>
+      <% } %>
+    </div>
+  <% } else { %>
+    <div class="listing-grid">
+      <% listings.forEach(function(listing) { %>
+        <a href="/listings/<%= listing._id %>" class="listing-card card">
+          <div class="listing-card-img">
+            <% if (listing.images && listing.images.length > 0) { %>
+              <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" />
+            <% } else { %>
+              <div class="listing-card-placeholder">No Image</div>
+            <% } %>
+          </div>
+
+          <div class="listing-card-body">
+            <h3 class="listing-card-title"><%= listing.title %></h3>
+            <p class="listing-card-location"><%= listing.location %>, <%= listing.country %></p>
+            <div class="listing-card-footer">
+              <span class="listing-card-price">₹<%= listing.price.toLocaleString() %> <small>/ night</small></span>
+              <span class="badge badge-type"><%= listing.propertyType %></span>
+            </div>
+
+            <% if (typeof showStatus !== "undefined" && showStatus) { %>
+              <span class="badge badge-status badge-<%= listing.status %>"><%= listing.status %></span>
+            <% } %>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+
+</section>
