@@ -14,6 +14,10 @@
           <li><a href="/listings/my">My Properties</a></li>
         <% } %>
 
+        <% if (currentUser.role === "admin") { %>
+          <li><a href="/admin">Admin</a></li>
+        <% } %>
+
         <li><a href="/profile">Hi, <%= currentUser.username %></a></li>
         <li>
           <form action="/logout" method="POST" style="display:inline">

@@ -11,14 +11,106 @@ const Listing = require("../models/Listing");
 const { cloudinary } = require("../config/cloudinary");
 
 // ---------------------------------------------------------------------------
-// GET /listings — Public listing index (approved only)
+// GET /listings — Public listing index with search & filters (approved only)
+//
+// Supported query params (all optional):
+//   q            — keyword search across title, description, location, country
+//   propertyType — exact match from the enum
+//   minPrice     — price >= value
+//   maxPrice     — price <= value
+//   guests       — maxGuests >= value  (properties that fit this many guests)
+//   bedrooms     — bedrooms >= value
+//   amenities    — comma-separated list, matches listings containing ALL
+//   country      — case-insensitive partial match
+//   sort         — price_asc | price_desc | newest (default)
 // ---------------------------------------------------------------------------
 module.exports.index = async (req, res, next) => {
   try {
-    const listings = await Listing.find({ status: "approved" })
-      .sort({ createdAt: -1 });
+    const {
+      q, propertyType, minPrice, maxPrice,
+      guests, bedrooms, amenities, country, sort,
+    } = req.query;
 
-    res.render("listings/index", { title: "Explore", listings });
+    // Always start with approved-only.
+    const filter = { status: "approved" };
+
+    // --- Keyword search (title, description, location, country) ---
+    if (q && q.trim()) {
+      const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "i");
+      filter.$or = [
+        { title: regex },
+        { description: regex },
+        { location: regex },
+        { country: regex },
+      ];
+    }
+
+    // --- Property type (exact match from enum) ---
+    if (propertyType && propertyType.trim()) {
+      filter.propertyType = propertyType.trim();
+    }
+
+    // --- Price range ---
+    if (minPrice && !isNaN(minPrice) && Number(minPrice) >= 0) {
+      filter.price = { ...filter.price, $gte: Number(minPrice) };
+    }
+    if (maxPrice && !isNaN(maxPrice) && Number(maxPrice) >= 0) {
+      filter.price = { ...filter.price, $lte: Number(maxPrice) };
+    }
+
+    // --- Minimum guests the property can accommodate ---
+    if (guests && !isNaN(guests) && Number(guests) >= 1) {
+      filter.maxGuests = { $gte: Number(guests) };
+    }
+
+    // --- Minimum bedrooms ---
+    if (bedrooms && !isNaN(bedrooms) && Number(bedrooms) >= 1) {
+      filter.bedrooms = { $gte: Number(bedrooms) };
+    }
+
+    // --- Amenities (must have ALL requested amenities) ---
+    if (amenities && amenities.trim()) {
+      const amenityList = amenities
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean);
+      if (amenityList.length > 0) {
+        // $all = listing must contain every requested amenity (case-insensitive).
+        filter.amenities = {
+          $all: amenityList.map((a) => new RegExp(`^${a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")),
+        };
+      }
+    }
+
+    // --- Country (case-insensitive partial match) ---
+    if (country && country.trim()) {
+      const escaped = country.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      // If keyword search already set $or, country filter here is an extra
+      // exact-field filter (not inside $or) — both conditions must match.
+      filter.country = new RegExp(escaped, "i");
+    }
+
+    // --- Sort ---
+    let sortOption = { createdAt: -1 }; // default: newest first
+    if (sort === "price_asc") sortOption = { price: 1 };
+    else if (sort === "price_desc") sortOption = { price: -1 };
+
+    const listings = await Listing.find(filter).sort(sortOption);
+
+    // Check whether any filters are active (for the "no results" UX).
+    const hasActiveFilters = !!(
+      q || propertyType || minPrice || maxPrice ||
+      guests || bedrooms || amenities || country || sort
+    );
+
+    res.render("listings/index", {
+      title: "Explore",
+      listings,
+      query: req.query,       // so the form can repopulate active filters
+      hasActiveFilters,
+      resultCount: listings.length,
+    });
   } catch (err) {
     next(err);
   }

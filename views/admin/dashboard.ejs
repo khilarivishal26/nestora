@@ -1,0 +1,86 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container admin-section">
+  <div class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <p>Review pending properties submitted by hosts.</p>
+  </div>
+
+  <div class="admin-stats">
+    <div class="card admin-stat-card">
+      <span class="admin-stat-label">Pending</span>
+      <span class="admin-stat-value"><%= pendingCount %></span>
+    </div>
+    <div class="card admin-stat-card">
+      <span class="admin-stat-label">Approved</span>
+      <span class="admin-stat-value"><%= approvedCount %></span>
+    </div>
+    <div class="card admin-stat-card">
+      <span class="admin-stat-label">Rejected</span>
+      <span class="admin-stat-value"><%= rejectedCount %></span>
+    </div>
+  </div>
+
+  <div class="card admin-table-card">
+    <h2 style="margin-top: 0; color: var(--forest-green);">Pending review</h2>
+
+    <% if (listings.length === 0) { %>
+      <p style="color: #666; margin: 0;">No properties awaiting approval.</p>
+    <% } else { %>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Location</th>
+              <th>Host</th>
+              <th>Submitted</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% listings.forEach(function(listing) { %>
+              <tr>
+                <td>
+                  <div class="admin-table-property">
+                    <div class="admin-table-thumb">
+                      <% if (listing.images && listing.images.length > 0) { %>
+                        <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" />
+                      <% } else { %>
+                        <div class="listing-card-placeholder">No Image</div>
+                      <% } %>
+                    </div>
+                    <div>
+                      <strong><%= listing.title %></strong>
+                      <div style="color: #666; font-size: 0.9rem;">
+                        ₹<%= listing.price.toLocaleString() %> / night
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td><%= listing.location %>, <%= listing.country %></td>
+                <td>
+                  <%= listing.owner.username %><br />
+                  <span style="color: #666; font-size: 0.9rem;"><%= listing.owner.email %></span>
+                </td>
+                <td><%= listing.createdAt.toDateString() %></td>
+                <td>
+                  <div class="admin-table-actions">
+                    <a href="/listings/<%= listing._id %>" class="btn btn-secondary">View</a>
+                    <form action="/admin/listings/<%= listing._id %>/approve?_method=PUT" method="POST">
+                      <button type="submit" class="btn btn-primary">Approve</button>
+                    </form>
+                    <form action="/admin/listings/<%= listing._id %>/reject?_method=PUT" method="POST"
+                          onsubmit="return confirm('Reject this property?');">
+                      <button type="submit" class="btn btn-danger">Reject</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</section>

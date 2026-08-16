@@ -1,12 +1,27 @@
 <% layout("layouts/boilerplate") %>
 
-<section class="container" style="padding: 60px 24px;">
-  <div class="card" style="max-width: 640px; margin: 0 auto; text-align: center;">
-    <h1 style="color: var(--forest-green); margin-top: 0;">Find your place. Feel at home.</h1>
-    <p style="color: var(--charcoal);">
-      This is a temporary Phase 1 home page used to verify the Nestora
-      layout and theme. The real home page (hero, search bar, featured
-      listings) is built in a later step.
-    </p>
+<section class="hero-section">
+  <div class="hero-content">
+    <h1>Find your place. Feel at home.</h1>
+    <p>Discover unique stays across India — villas, cottages, resorts, and more.</p>
+
+    <form action="/listings" method="GET" class="hero-search">
+      <input
+        type="text"
+        name="q"
+        placeholder="Where do you want to go?"
+        aria-label="Search destinations"
+      />
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <div class="quick-filters">
+      <a href="/listings?propertyType=hotel" class="quick-filter-btn">🏨 Hotels</a>
+      <a href="/listings?propertyType=villa" class="quick-filter-btn">🏡 Villas</a>
+      <a href="/listings?propertyType=resort" class="quick-filter-btn">🏖️ Resorts</a>
+      <a href="/listings?propertyType=cottage" class="quick-filter-btn">🛖 Cottages</a>
+      <a href="/listings?propertyType=apartment" class="quick-filter-btn">🏢 Apartments</a>
+      <a href="/listings?propertyType=homestay" class="quick-filter-btn">🏠 Homestays</a>
+    </div>
   </div>
 </section>

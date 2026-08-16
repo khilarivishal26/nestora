@@ -32,7 +32,7 @@ module.exports.isHost = (req, res, next) => {
     return res.redirect("/login");
   }
 
-  if (req.user.role !== "host") {
+  if (req.user.role !== "host" && req.user.role !== "admin") {
     req.flash("error", "You do not have permission to access that page.");
     return res.redirect("/");
   }

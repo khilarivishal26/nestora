@@ -71,7 +71,26 @@
         Hosted by <strong><%= listing.owner.username %></strong>
       </p>
 
-      <%# ---------- Owner/Admin actions ---------- %>
+      <%# ---------- Admin approval actions ---------- %>
+      <% if (isAdmin && listing.status !== "approved") { %>
+        <div class="admin-review-actions">
+          <p style="margin: 0 0 12px 0; color: #666;">
+            <strong>Admin review:</strong> This property is not yet approved.
+          </p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <form action="/admin/listings/<%= listing._id %>/approve?_method=PUT" method="POST">
+              <button type="submit" class="btn btn-primary">Approve</button>
+            </form>
+            <form action="/admin/listings/<%= listing._id %>/reject?_method=PUT" method="POST"
+                  onsubmit="return confirm('Reject this property?');">
+              <button type="submit" class="btn btn-danger">Reject</button>
+            </form>
+            <a href="/admin" class="btn btn-secondary">Back to dashboard</a>
+          </div>
+        </div>
+      <% } %>
+
+      <%# ---------- Owner/Admin edit actions ---------- %>
       <% if (isOwner || isAdmin) { %>
         <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
           <a href="/listings/<%= listing._id %>/edit" class="btn btn-primary">Edit Property</a>

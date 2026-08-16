@@ -14,6 +14,7 @@ const connectDB = require("./utils/db");
 const indexRouter = require("./routes/index");
 const authRouter = require("./routes/auth");
 const listingsRouter = require("./routes/listings");
+const adminRouter = require("./routes/admin");
 const { notFound, errorHandler } = require("./middleware/error");
 
 const app = express();
@@ -83,6 +84,7 @@ app.use((req, res, next) => {
 app.use("/", indexRouter);
 app.use("/", authRouter);
 app.use("/listings", listingsRouter);
+app.use("/admin", adminRouter);
 
 // Any request that didn't match a route above falls through to here.
 app.use(notFound);

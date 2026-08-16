@@ -5,7 +5,9 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "seed:admin": "node scripts/seedAdmin.js",
+    "test:phase3": "node scripts/test-phase3-access.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
