@@ -1,0 +1,238 @@
+/* ==========================================================================
+   Nestora — Base Theme
+   Forest Green #174A3A | Cream #F7F2E8 | Terracotta #D9825B | Charcoal #202522
+   ========================================================================== */
+
+:root {
+  --forest-green: #174a3a;
+  --cream: #f7f2e8;
+  --terracotta: #d9825b;
+  --charcoal: #202522;
+  --white: #ffffff;
+
+  --radius: 14px;
+  --shadow-soft: 0 4px 16px rgba(32, 37, 34, 0.08);
+  --shadow-medium: 0 8px 24px rgba(32, 37, 34, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--cream);
+  color: var(--charcoal);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ---------- Layout wrapper ---------- */
+
+main {
+  flex: 1;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------- Navbar ---------- */
+
+.navbar {
+  background-color: var(--forest-green);
+  color: var(--cream);
+  box-shadow: var(--shadow-soft);
+}
+
+.navbar .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--cream);
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-links a {
+  color: var(--cream);
+  font-weight: 500;
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
+}
+
+.navbar-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.navbar-links .btn-cta {
+  background-color: var(--terracotta);
+  color: var(--white);
+  padding: 8px 18px;
+  border-radius: 999px;
+  opacity: 1;
+}
+
+.navbar-links .btn-cta:hover {
+  background-color: #c66e48;
+  text-decoration: none;
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  background-color: var(--charcoal);
+  color: var(--cream);
+  padding: 32px 0;
+  margin-top: 48px;
+}
+
+.footer .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.footer-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.footer-tagline {
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+
+/* ---------- Flash messages ---------- */
+
+.flash-container {
+  max-width: 1200px;
+  margin: 16px auto 0;
+  padding: 0 24px;
+}
+
+.flash-message {
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+}
+
+.flash-success {
+  background-color: #e3f0e9;
+  color: var(--forest-green);
+  border: 1px solid #b7d9c7;
+}
+
+.flash-error {
+  background-color: #fbe7e0;
+  color: #a8492c;
+  border: 1px solid #f0c3ae;
+}
+
+/* ---------- Generic components ---------- */
+
+.card {
+  background-color: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background-color: var(--forest-green);
+  color: var(--cream);
+}
+
+.btn-primary:hover {
+  background-color: #123b2e;
+}
+
+.btn-secondary {
+  background-color: var(--terracotta);
+  color: var(--white);
+}
+
+.btn-secondary:hover {
+  background-color: #c66e48;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .navbar .container {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .navbar-links {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+.flash-message {
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.flash-message.flash-hide {
+  opacity: 0;
+  transform: translateY(-8px);
+}

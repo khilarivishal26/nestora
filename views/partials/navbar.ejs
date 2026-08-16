@@ -1,0 +1,23 @@
+<nav class="navbar">
+  <div class="container">
+    <a href="/" class="navbar-brand">Nestora</a>
+    <ul class="navbar-links">
+      <li><a href="/listings">Explore</a></li>
+
+      <%# currentUser is not yet set anywhere - it will become available
+          once Passport middleware is added later in Phase 1. Until then
+          this always falls through to the logged-out links below. %>
+      <% if (typeof currentUser !== "undefined" && currentUser) { %>
+        <li><a href="/profile">Hi, <%= currentUser.username %></a></li>
+        <li>
+          <form action="/logout" method="POST" style="display:inline">
+            <button type="submit" class="link-button">Logout</button>
+          </form>
+        </li>
+      <% } else { %>
+        <li><a href="/login">Login</a></li>
+        <li><a href="/register" class="btn-cta">Register</a></li>
+      <% } %>
+    </ul>
+  </div>
+</nav>

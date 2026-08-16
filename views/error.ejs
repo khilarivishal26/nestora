@@ -1,0 +1,14 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 60px 24px; text-align: center;">
+  <div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h1 style="color: var(--terracotta); margin-top: 0;"><%= statusCode %></h1>
+    <p style="color: var(--charcoal);"><%= message %></p>
+
+    <% if (stack) { %>
+      <pre style="text-align: left; overflow-x: auto; background: #f4f4f4; padding: 12px; border-radius: 8px; font-size: 0.8rem;"><%= stack %></pre>
+    <% } %>
+
+    <a href="/" class="btn btn-primary" style="margin-top: 12px; display: inline-block;">Go back home</a>
+  </div>
+</section>

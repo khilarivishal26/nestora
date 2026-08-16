@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== "undefined" ? title + " | Nestora" : "Nestora - Find your place. Feel at home." %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <%- include("../partials/navbar") %>
+
+  <%- include("../partials/flash") %>
+
+  <main>
+    <%- body %>
+  </main>
+
+  <%- include("../partials/footer") %>
+
+  <script src="/js/script.js"></script>
+</body>
+</html>

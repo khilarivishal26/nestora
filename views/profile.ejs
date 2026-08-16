@@ -1,0 +1,16 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 60px 24px;">
+  <div class="card" style="max-width: 480px; margin: 0 auto;">
+    <h1 style="color: var(--forest-green); margin-top: 0;">Welcome, <%= currentUser.username %></h1>
+
+    <p><strong>Email:</strong> <%= currentUser.email %></p>
+    <p><strong>Role:</strong> <%= currentUser.role %></p>
+    <p><strong>Joined:</strong> <%= currentUser.createdAt.toDateString() %></p>
+
+    <p style="color: #666; font-size: 0.9rem; margin-top: 24px;">
+      This is a temporary Phase 1 verification page. It will become the
+      real profile/dashboard system in a later phase.
+    </p>
+  </div>
+</section>
