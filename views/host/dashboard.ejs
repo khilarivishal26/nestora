@@ -17,9 +17,11 @@
   <%# Metric KPI Cards %>
   <div class="dashboard-stats-grid" style="margin-bottom: 32px;">
     <div class="card dashboard-stat-card">
-      <span class="dashboard-stat-label">TOTAL EARNINGS</span>
-      <span class="dashboard-stat-value" style="color: var(--forest-green);">₹<%= totalRevenue.toLocaleString() %></span>
-      <span class="dashboard-stat-sub"><%= totalReservations %> total reservations</span>
+      <span class="dashboard-stat-label">NET HOST EARNINGS</span>
+      <span class="dashboard-stat-value" style="color: var(--forest-green);">₹<%= (typeof netHostEarnings !== "undefined" ? netHostEarnings : totalRevenue).toLocaleString() %></span>
+      <span class="dashboard-stat-sub">
+        Gross: ₹<%= (typeof grossBookings !== "undefined" ? grossBookings : totalRevenue).toLocaleString() %> · Fee (5%): ₹<%= (typeof totalCommission !== "undefined" ? totalCommission : 0).toLocaleString() %>
+      </span>
     </div>
 
     <div class="card dashboard-stat-card">

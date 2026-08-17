@@ -8,9 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
   flashMessages.forEach((message) => {
     setTimeout(() => {
       message.classList.add("flash-hide");
-      // Wait for the CSS fade transition (0.5s) to finish before removing
-      // the element, otherwise it would just disappear instantly.
-      setTimeout(() => message.remove(), 500);
+      setTimeout(() => {
+        const container = message.parentElement;
+        message.remove();
+        if (container && container.classList.contains("flash-container") && !container.children.length) {
+          container.remove();
+        }
+      }, 300);
     }, 3000);
   });
 

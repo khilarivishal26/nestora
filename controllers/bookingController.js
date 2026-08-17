@@ -104,9 +104,9 @@ module.exports.create = async (req, res, next) => {
     }
 
     const pricePerNight = listing.price;
-    const subtotal = nights * pricePerNight;
-    const serviceFee = Math.round(subtotal * 0.05); // 5% Nestora service fee
-    const totalPrice = subtotal + serviceFee;
+    const totalPrice = nights * pricePerNight; // Guest pays only accommodation total
+    const platformCommission = Math.round(totalPrice * 0.05); // 5% Nestora commission from host
+    const hostEarnings = totalPrice - platformCommission; // Net host payout
 
     // 7. Create and persist booking
     const booking = new Booking({
@@ -117,7 +117,9 @@ module.exports.create = async (req, res, next) => {
       guests: numGuests,
       nights,
       pricePerNight,
-      serviceFee,
+      serviceFee: platformCommission,
+      platformCommission,
+      hostEarnings,
       totalPrice,
       status: "pending",
       paymentStatus: "pending",

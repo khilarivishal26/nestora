@@ -25,6 +25,16 @@ const paymentSchema = new mongoose.Schema(
       required: [true, "Payment amount is required."],
       min: [0, "Payment amount cannot be negative."],
     },
+    platformCommission: {
+      type: Number,
+      default: 0,
+      min: [0, "Commission cannot be negative."],
+    },
+    hostEarnings: {
+      type: Number,
+      default: 0,
+      min: [0, "Host earnings cannot be negative."],
+    },
     currency: {
       type: String,
       default: "inr",

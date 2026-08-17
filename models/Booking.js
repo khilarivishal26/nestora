@@ -44,6 +44,16 @@ const bookingSchema = new mongoose.Schema(
       default: 0,
       min: [0, "Service fee cannot be negative."],
     },
+    platformCommission: {
+      type: Number,
+      default: 0,
+      min: [0, "Commission cannot be negative."],
+    },
+    hostEarnings: {
+      type: Number,
+      default: 0,
+      min: [0, "Host earnings cannot be negative."],
+    },
     totalPrice: {
       type: Number,
       required: [true, "Total price is required."],

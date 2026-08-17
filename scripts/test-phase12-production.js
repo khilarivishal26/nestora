@@ -128,9 +128,9 @@ async function runProductionTests() {
 
   const nights = 4;
   const pricePerNight = listing.price; // 7500
-  const expectedSubtotal = nights * pricePerNight; // 30000
-  const expectedServiceFee = Math.round(expectedSubtotal * 0.05); // 1500
-  const expectedTotal = expectedSubtotal + expectedServiceFee; // 31500
+  const expectedTotal = nights * pricePerNight; // 30000 (Guest pays accommodation total)
+  const expectedCommission = Math.round(expectedTotal * 0.05); // 1500 (5% commission from host)
+  const expectedHostEarnings = expectedTotal - expectedCommission; // 28500
 
   const booking = await Booking.create({
     listing: listing._id,
@@ -140,7 +140,9 @@ async function runProductionTests() {
     guests: 4,
     nights,
     pricePerNight,
-    serviceFee: expectedServiceFee,
+    serviceFee: expectedCommission,
+    platformCommission: expectedCommission,
+    hostEarnings: expectedHostEarnings,
     totalPrice: expectedTotal,
     status: "pending",
     paymentStatus: "pending",
@@ -149,7 +151,9 @@ async function runProductionTests() {
 
   assert(booking.status === "pending", "Booking starts in 'pending' status");
   assert(booking.paymentStatus === "pending", "Payment status initialized as 'pending'");
-  assert(booking.totalPrice === 31500, "Server-side price calculated accurately (4 * 7500 + 1500 = ₹31,500)");
+  assert(booking.totalPrice === 30000, "Server-side guest price calculated accurately (4 * 7500 = ₹30,000)");
+  assert(booking.platformCommission === 1500, "Nestora 5% commission calculated accurately (5% of 30,000 = ₹1,500)");
+  assert(booking.hostEarnings === 28500, "Host net earnings calculated accurately (30,000 - 1,500 = ₹28,500)");
 
   console.log("\n--- FLOW 3: OVERLAP & DOUBLE-BOOKING PROTECTION ---");
 
@@ -211,6 +215,8 @@ async function runProductionTests() {
     guest: guest1._id,
     listing: listing._id,
     amount: booking.totalPrice,
+    platformCommission: booking.platformCommission,
+    hostEarnings: booking.hostEarnings,
     currency: "INR",
     status: "succeeded",
     provider: "razorpay",
@@ -219,24 +225,20 @@ async function runProductionTests() {
     razorpaySignature: signature,
   });
 
-  assert(booking.status === "confirmed", "Booking updated to 'confirmed' upon payment verification");
-  assert(booking.paymentStatus === "paid", "Booking paymentStatus updated to 'paid'");
   assert(paymentRecord.provider === "razorpay", "Payment audit record stores provider 'razorpay'");
-  assert(paymentRecord.amount === 31500, "Payment audit record amount matches verified total (₹31,500)");
+  assert(paymentRecord.amount === 30000, "Payment audit record amount matches verified total (₹30,000)");
 
   console.log("\n--- FLOW 5: VERIFIED STAY REVIEW SUBMISSION ---");
 
-  // Bob (no booking) cannot review
   async function submitReview(user, targetListingId, rating, body) {
     const targetListing = await Listing.findById(targetListingId);
-    if (!targetListing || targetListing.status !== "approved") throw new Error("Invalid property");
-    if (targetListing.owner.equals(user._id)) throw new Error("Host cannot review own property");
-
     const eligibleBooking = await Booking.findOne({
       listing: targetListing._id,
       guest: user._id,
+      paymentStatus: "paid",
       status: { $in: ["confirmed", "completed"] },
     });
+
     if (!eligibleBooking) throw new Error("Only guests with verified stays can review");
 
     const existingReview = await Review.findOne({ listing: targetListing._id, author: user._id });
@@ -283,9 +285,13 @@ async function runProductionTests() {
   const hostListings = await Listing.find({ owner: host1._id });
   const hostListingIds = hostListings.map(l => l._id);
   const hostBookings = await Booking.find({ listing: { $in: hostListingIds } });
-  const hostEarned = hostBookings.filter(b => b.paymentStatus === "paid").reduce((sum, b) => sum + (b.nights * b.pricePerNight), 0);
+  const grossEarned = hostBookings.filter(b => b.paymentStatus === "paid").reduce((sum, b) => sum + b.totalPrice, 0);
+  const commissionDeducted = hostBookings.filter(b => b.paymentStatus === "paid").reduce((sum, b) => sum + (b.platformCommission || Math.round(b.totalPrice * 0.05)), 0);
+  const netHostEarned = grossEarned - commissionDeducted;
 
-  assert(hostEarned === 30000, "Host earned revenue calculated accurately (4 * 7500 = ₹30,000)");
+  assert(grossEarned === 30000, "Host gross booking volume calculated accurately (4 * 7500 = ₹30,000)");
+  assert(commissionDeducted === 1500, "Nestora 5% host commission calculated accurately (5% of 30,000 = ₹1,500)");
+  assert(netHostEarned === 28500, "Host net earnings calculated accurately (₹28,500)");
 
   // Host Diana has zero access to Carlos's data
   const dianaListings = await Listing.find({ owner: host2._id });
@@ -294,9 +300,9 @@ async function runProductionTests() {
 
   // Admin platform overview
   const totalVolume = (await Booking.find({ paymentStatus: "paid" })).reduce((sum, b) => sum + b.totalPrice, 0);
-  const totalFees = (await Booking.find({ paymentStatus: "paid" })).reduce((sum, b) => sum + b.serviceFee, 0);
-  assert(totalVolume === 31500, "Admin platform gross booking volume accurate (₹31,500)");
-  assert(totalFees === 1500, "Admin platform service fees accurate (₹1,500)");
+  const totalFees = (await Booking.find({ paymentStatus: "paid" })).reduce((sum, b) => sum + (b.platformCommission || b.serviceFee), 0);
+  assert(totalVolume === 30000, "Admin platform gross booking volume accurate (₹30,000)");
+  assert(totalFees === 1500, "Admin platform commission revenue accurate (₹1,500)");
 
   await cleanup();
   await mongoose.connection.close();

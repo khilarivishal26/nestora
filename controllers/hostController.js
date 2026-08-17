@@ -33,10 +33,15 @@ module.exports.dashboard = async (req, res, next) => {
     today.setHours(0, 0, 0, 0);
 
     const activeBookings = bookings.filter((b) => b.status !== "cancelled");
-    const totalRevenue = activeBookings.reduce(
-      (sum, b) => sum + (b.nights * b.pricePerNight),
+    const grossBookings = activeBookings.reduce(
+      (sum, b) => sum + (b.totalPrice || (b.nights * b.pricePerNight)),
       0
     );
+    const totalCommission = activeBookings.reduce(
+      (sum, b) => sum + (b.platformCommission || b.serviceFee || Math.round((b.totalPrice || (b.nights * b.pricePerNight)) * 0.05)),
+      0
+    );
+    const netHostEarnings = grossBookings - totalCommission;
 
     const upcomingBookings = bookings.filter(
       (b) => b.status === "confirmed" && new Date(b.checkIn) >= today
@@ -53,7 +58,10 @@ module.exports.dashboard = async (req, res, next) => {
       pendingProperties,
       approvedProperties,
       rejectedProperties,
-      totalRevenue,
+      grossBookings,
+      totalCommission,
+      netHostEarnings,
+      totalRevenue: netHostEarnings,
       totalReservations: bookings.length,
       upcomingCount: upcomingBookings.length,
       completedCount: completedBookings.length,

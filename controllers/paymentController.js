@@ -54,13 +54,15 @@ module.exports.showPaymentPage = async (req, res, next) => {
     }
 
     // Strictly compute and verify payable amount on the server (never trust browser)
-    const expectedSubtotal = booking.nights * booking.pricePerNight;
-    const expectedServiceFee = Math.round(expectedSubtotal * 0.05);
-    const expectedTotal = expectedSubtotal + expectedServiceFee;
+    const expectedTotal = booking.nights * booking.pricePerNight; // Accommodation total paid by guest
+    const platformCommission = Math.round(expectedTotal * 0.05); // 5% Nestora commission from host
+    const hostEarnings = expectedTotal - platformCommission; // Net host payout
 
-    if (booking.totalPrice !== expectedTotal) {
+    if (booking.totalPrice !== expectedTotal || booking.platformCommission !== platformCommission) {
       booking.totalPrice = expectedTotal;
-      booking.serviceFee = expectedServiceFee;
+      booking.serviceFee = platformCommission;
+      booking.platformCommission = platformCommission;
+      booking.hostEarnings = hostEarnings;
       await booking.save();
     }
 
@@ -186,6 +188,8 @@ module.exports.verifyPayment = async (req, res, next) => {
         guest: booking.guest,
         listing: booking.listing._id,
         amount: booking.totalPrice,
+        platformCommission: booking.platformCommission || Math.round(booking.totalPrice * 0.05),
+        hostEarnings: booking.hostEarnings || (booking.totalPrice - Math.round(booking.totalPrice * 0.05)),
         currency: "INR",
         status: "succeeded",
         provider: "razorpay",
@@ -196,6 +200,9 @@ module.exports.verifyPayment = async (req, res, next) => {
     } else {
       payment.status = "succeeded";
       payment.provider = "razorpay";
+      payment.amount = booking.totalPrice;
+      payment.platformCommission = booking.platformCommission || Math.round(booking.totalPrice * 0.05);
+      payment.hostEarnings = booking.hostEarnings || (booking.totalPrice - Math.round(booking.totalPrice * 0.05));
       payment.razorpayOrderId = finalOrderId;
       payment.razorpayPaymentId = finalPaymentId;
       payment.razorpaySignature = booking.razorpaySignature;

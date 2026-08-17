@@ -1,13 +1,30 @@
-<%# connect-flash / res.locals.success / res.locals.error are wired up
-    in the session/auth step. Until then these locals are undefined,
-    so the guards below simply render nothing. %>
-<% if (typeof success !== "undefined" && success && success.length) { %>
-  <div class="flash-container">
-    <div class="flash-message flash-success"><%= success %></div>
-  </div>
-<% } %>
-<% if (typeof error !== "undefined" && error && error.length) { %>
-  <div class="flash-container">
-    <div class="flash-message flash-error"><%= error %></div>
+<%# connect-flash notification toast partial %>
+<% const hasSuccess = typeof success !== "undefined" && success && success.length; %>
+<% const hasError = typeof error !== "undefined" && error && error.length; %>
+<% const hasWarning = typeof warning !== "undefined" && warning && warning.length; %>
+<% const hasInfo = typeof info !== "undefined" && info && info.length; %>
+
+<% if (hasSuccess || hasError || hasWarning || hasInfo) { %>
+  <div class="flash-container" aria-live="polite">
+    <% if (hasSuccess) { %>
+      <div class="flash-message flash-success">
+        <span>✓ <%= success %></span>
+      </div>
+    <% } %>
+    <% if (hasError) { %>
+      <div class="flash-message flash-error">
+        <span>⚠ <%= error %></span>
+      </div>
+    <% } %>
+    <% if (hasWarning) { %>
+      <div class="flash-message flash-warning">
+        <span>⚠ <%= warning %></span>
+      </div>
+    <% } %>
+    <% if (hasInfo) { %>
+      <div class="flash-message flash-info">
+        <span>ℹ <%= info %></span>
+      </div>
+    <% } %>
   </div>
 <% } %>

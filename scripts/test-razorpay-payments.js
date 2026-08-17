@@ -94,9 +94,9 @@ async function runRazorpayTests() {
   // ==========================================
   const nights = 4;
   const pricePerNight = listing.price;
-  const expectedSubtotal = nights * pricePerNight; // 16000
-  const expectedFee = Math.round(expectedSubtotal * 0.05); // 800
-  const expectedTotal = expectedSubtotal + expectedFee; // 16800
+  const expectedTotal = nights * pricePerNight; // 16000 (Guest pays accommodation total)
+  const expectedCommission = Math.round(expectedTotal * 0.05); // 800 (5% commission from host)
+  const expectedHostEarnings = expectedTotal - expectedCommission; // 15200
 
   const booking = await Booking.create({
     listing: listing._id,
@@ -106,7 +106,9 @@ async function runRazorpayTests() {
     guests: 2,
     nights,
     pricePerNight,
-    serviceFee: expectedFee,
+    serviceFee: expectedCommission,
+    platformCommission: expectedCommission,
+    hostEarnings: expectedHostEarnings,
     totalPrice: expectedTotal,
     status: "pending",
     paymentStatus: "pending",
@@ -116,7 +118,9 @@ async function runRazorpayTests() {
   assert(booking.status === "pending", "Booking initial status is 'pending'");
   assert(booking.paymentStatus === "pending", "Booking initial paymentStatus is 'pending'");
   assert(booking.paymentMethod === "razorpay", "Booking paymentMethod is 'razorpay'");
-  assert(booking.totalPrice === 16800, "Backend price calculated accurately: ₹16,800");
+  assert(booking.totalPrice === 16000, "Backend guest price calculated accurately: ₹16,000");
+  assert(booking.platformCommission === 800, "Platform 5% commission calculated accurately: ₹800");
+  assert(booking.hostEarnings === 15200, "Host net earnings calculated accurately: ₹15,200");
 
   // ==========================================
   // 2. TEST: Razorpay Order Creation
@@ -127,7 +131,7 @@ async function runRazorpayTests() {
 
   assert(booking.razorpayOrderId === orderId, "Razorpay Order ID linked to booking");
   const amountInPaise = booking.totalPrice * 100;
-  assert(amountInPaise === 1680000, "Razorpay order amount in paise calculated accurately (1,680,000 paise = ₹16,800)");
+  assert(amountInPaise === 1600000, "Razorpay order amount in paise calculated accurately (1,600,000 paise = ₹16,000)");
 
   // ==========================================
   // 3. TEST: Server-Side Cryptographic Signature Verification
@@ -192,7 +196,7 @@ async function runRazorpayTests() {
   assert(result.booking.paymentStatus === "paid", "Booking paymentStatus updated to 'paid'");
   assert(result.payment.provider === "razorpay", "Payment record provider is 'razorpay'");
   assert(result.payment.razorpayPaymentId === validPaymentId, "Payment record stores Razorpay Payment ID");
-  assert(result.payment.amount === 16800, "Payment record amount matches verified total (₹16,800)");
+  assert(result.payment.amount === 16000, "Payment record amount matches verified total (₹16,000)");
 
   // ==========================================
   // 5. TEST: Idempotency (Duplicate Verify Requests)

@@ -71,11 +71,7 @@
         <div class="booking-breakdown" style="margin-bottom: 20px;">
           <div class="booking-breakdown-row">
             <span>₹<%= booking.pricePerNight.toLocaleString() %> × <%= booking.nights %> night<%= booking.nights !== 1 ? 's' : '' %></span>
-            <span>₹<%= (booking.nights * booking.pricePerNight).toLocaleString() %></span>
-          </div>
-          <div class="booking-breakdown-row">
-            <span>Nestora Service Fee (5%)</span>
-            <span>₹<%= booking.serviceFee.toLocaleString() %></span>
+            <span>₹<%= booking.totalPrice.toLocaleString() %></span>
           </div>
           <hr style="border: none; border-top: 1px solid #eee5da; margin: 10px 0;" />
           <div class="booking-breakdown-row total">

@@ -271,6 +271,8 @@ module.exports.show = async (req, res, next) => {
       reviewCount: listing.reviews ? listing.reviews.length : 0,
       isEligibleGuest,
       hasReviewed,
+      mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_TOKEN || "",
+      mapboxToken: process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_TOKEN || "",
     });
   } catch (err) {
     next(err);

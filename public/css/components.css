@@ -300,38 +300,72 @@
   margin-bottom: 4px;
 }
 
-/* ---------- Flash Messages ---------- */
+/* ---------- Flash Messages Overlay ---------- */
 
 .flash-container {
-  max-width: 1200px;
-  margin: 16px auto 0;
-  padding: 0 24px;
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: 90%;
+  max-width: 560px;
+  pointer-events: none;
 }
 
 .flash-message {
-  padding: 12px 18px;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
   border-radius: var(--radius);
-  margin-bottom: 12px;
-  font-weight: 500;
-  box-shadow: var(--shadow-soft);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  animation: flashSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+@keyframes flashSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .flash-message.flash-hide {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-10px);
 }
 
 .flash-success {
-  background-color: #e3f0e9;
-  color: var(--forest-green);
-  border: 1px solid #b7d9c7;
+  background-color: #eaf5ef;
+  color: #124b36;
+  border: 1px solid #b2dac3;
 }
 
 .flash-error {
-  background-color: #fbe7e0;
-  color: #a8492c;
-  border: 1px solid #f0c3ae;
+  background-color: #fdf0ec;
+  color: #9c3b20;
+  border: 1px solid #f6c4b4;
+}
+
+.flash-warning {
+  background-color: #fff9e6;
+  color: #8a6400;
+  border: 1px solid #ffe08a;
+}
+
+.flash-info {
+  background-color: #eef6fc;
+  color: #1a5b8c;
+  border: 1px solid #bde0fe;
 }
 
 /* ---------- Professional Footer V2 ---------- */
