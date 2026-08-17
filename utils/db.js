@@ -2,13 +2,31 @@
 // app.js waits for this promise to resolve before starting the server,
 // so we never accept requests without a working database connection.
 
+const dns = require("dns");
 const mongoose = require("mongoose");
 
+// Configure public DNS resolvers to prevent querySrv ECONNREFUSED on MongoDB Atlas (SRV) connections
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+} catch (e) {
+  /* Ignore if setting custom DNS servers is not supported in the host environment */
+}
+
 async function connectDB() {
-  const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/nestora";
+  let uri = (process.env.MONGODB_URI || "").trim();
+  if (!uri && process.env.NODE_ENV !== "production") {
+    uri = "mongodb://127.0.0.1:27017/nestora";
+  }
+
+  if (!uri) {
+    throw new Error(
+      "MONGODB_URI is missing in environment variables. Please add MONGODB_URI in your Render Dashboard -> Environment tab with your MongoDB Atlas connection string."
+    );
+  }
 
   try {
     await mongoose.connect(uri, {
+      dbName: "nestora",
       serverSelectionTimeoutMS: 5000,
     });
     console.log(`MongoDB connected: ${mongoose.connection.name}`);
@@ -19,6 +37,7 @@ async function connectDB() {
       );
       try {
         await mongoose.connect("mongodb://127.0.0.1:27017/nestora", {
+          dbName: "nestora",
           serverSelectionTimeoutMS: 5000,
         });
         console.log(`MongoDB fallback connected: ${mongoose.connection.name}`);

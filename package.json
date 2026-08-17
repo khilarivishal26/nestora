@@ -8,6 +8,7 @@
     "dev": "nodemon app.js",
     "test": "node scripts/test-phase12-production.js",
     "test:razorpay": "node scripts/test-razorpay-payments.js",
+    "test:wishlist": "node scripts/test-wishlist.js",
     "seed:admin": "node scripts/seedAdmin.js"
   },
   "dependencies": {

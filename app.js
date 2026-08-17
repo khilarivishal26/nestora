@@ -2,6 +2,13 @@
 
 require("dotenv").config();
 
+const dns = require("dns");
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+} catch (e) {
+  /* Ignore if custom DNS server override is not permitted */
+}
+
 const mongoose = require("mongoose");
 const express = require("express");
 const path = require("path");
@@ -19,6 +26,8 @@ const reviewsRouter = require("./routes/reviews");
 const bookingsRouter = require("./routes/bookings");
 const hostRouter = require("./routes/host");
 const adminRouter = require("./routes/admin");
+const wishlistRouter = require("./routes/wishlist");
+const Wishlist = require("./models/Wishlist");
 const paymentController = require("./controllers/paymentController");
 const { notFound, errorHandler } = require("./middleware/error");
 
@@ -37,7 +46,7 @@ app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Parse form submissions and capture raw body for Stripe webhook verification
+// Parse form submissions and capture raw body for webhook verification
 app.use(express.urlencoded({ extended: true }));
 app.use(
   express.json({
@@ -54,10 +63,11 @@ app.use(methodOverride("_method"));
 // Serve static assets (CSS/JS) from /public.
 app.use(express.static(path.join(__dirname, "public")));
 
-// Sessions are stored in MongoDB (not memory), reusing the active Mongoose
-// connection so sessions survive server restarts and avoid duplicate connections.
+const mongoUri = (process.env.MONGODB_URI || "").trim() || (process.env.NODE_ENV !== "production" ? "mongodb://127.0.0.1:27017/nestora" : "");
+
 const sessionStore = MongoStore.create({
-  clientPromise: mongoose.connection.asPromise().then(() => mongoose.connection.getClient()),
+  mongoUrl: mongoUri,
+  dbName: "nestora",
   touchAfter: 24 * 60 * 60, // only re-save an unchanged session once a day
 });
 
@@ -92,12 +102,25 @@ app.use(flash());
 // Makes the logged-in user and flash messages available in every EJS
 // template automatically, so we don't have to pass them manually in
 // every single route.
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.currentUser = req.user;
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   res.locals.mapboxAccessToken = process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_TOKEN || "";
   res.locals.mapboxToken = res.locals.mapboxAccessToken;
+
+  // Make saved wishlist listing IDs available to all EJS templates for instant favorite state
+  if (req.user) {
+    try {
+      const userWishlist = await Wishlist.find({ user: req.user._id }).select("listing");
+      res.locals.wishlistListingIds = userWishlist.map((w) => w.listing.toString());
+    } catch (e) {
+      res.locals.wishlistListingIds = [];
+    }
+  } else {
+    res.locals.wishlistListingIds = [];
+  }
+
   next();
 });
 
@@ -123,6 +146,7 @@ app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/bookings", bookingsRouter);
 app.use("/host", hostRouter);
 app.use("/admin", adminRouter);
+app.use("/wishlist", wishlistRouter);
 
 // Any request that didn't match a route above falls through to here.
 app.use(notFound);

@@ -1,0 +1,110 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 40px 24px; min-height: 65vh;">
+
+  <%# ---------- Page Header ---------- %>
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 32px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="color: var(--forest-green); margin: 0; font-size: 2.1rem; letter-spacing: -0.5px;">My Wishlist</h1>
+        <span class="badge badge-type" style="font-size: 0.85rem; padding: 4px 12px;">
+          <%= wishlistItems.length %> <%= wishlistItems.length === 1 ? 'saved stay' : 'saved stays' %>
+        </span>
+      </div>
+      <p style="color: #666; margin: 6px 0 0 0; font-size: 1.05rem;">
+        Your favorite stays, luxury villas, and dream getaways saved in one place.
+      </p>
+    </div>
+
+    <% if (wishlistItems.length > 0) { %>
+      <a href="/listings" class="btn btn-secondary" style="font-size: 0.95rem;">+ Explore More Stays</a>
+    <% } %>
+  </div>
+
+  <%# ---------- Empty State ---------- %>
+  <% if (!wishlistItems || wishlistItems.length === 0) { %>
+    <div class="card" style="text-align: center; padding: 64px 24px; max-width: 600px; margin: 40px auto; border: 1px solid #eee5da; border-radius: var(--radius);">
+      <div style="font-size: 3.5rem; margin-bottom: 16px; line-height: 1;">🤍</div>
+      <h2 style="color: var(--forest-green); margin: 0 0 8px 0; font-size: 1.6rem;">Your wishlist is empty</h2>
+      <p style="color: #666; font-size: 1rem; max-width: 440px; margin: 0 auto 24px auto; line-height: 1.6;">
+        Explore our curated collection of luxury villas, beach houses, and cozy mountain retreats. Tap the heart icon on any property to save it here.
+      </p>
+      <a href="/listings" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem;">Explore Available Properties</a>
+    </div>
+  <% } else { %>
+
+    <%# ---------- Wishlist Grid ---------- %>
+    <div class="listing-grid">
+      <% wishlistItems.forEach(function(item) { %>
+        <% const listing = item.listing; %>
+        <div class="card listing-card property-card-v2 wishlist-grid-item" id="wishlist-item-<%= listing._id %>">
+          
+          <%# Image Media Wrap %>
+          <div class="listing-card-img property-card-media-wrap">
+            <% if (listing.images && listing.images.length > 0) { %>
+              <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" loading="lazy" />
+            <% } else { %>
+              <div class="listing-card-placeholder">No Image Available</div>
+            <% } %>
+
+            <%# Heart Remove / Toggle Button %>
+            <button type="button"
+                    class="property-card-favorite-btn active"
+                    data-listing-id="<%= listing._id %>"
+                    aria-label="Remove from wishlist"
+                    title="Remove from wishlist"
+                    onclick="toggleWishlist(event, '<%= listing._id %>')">
+              ♥
+            </button>
+
+            <%# Property Type Tag %>
+            <span class="property-card-type-tag">
+              <%= listing.propertyType %>
+            </span>
+          </div>
+
+          <%# Card Body %>
+          <div class="listing-card-body" style="display: flex; flex-direction: column; height: calc(100% - 220px); justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 4px;">
+                <p class="listing-card-location" style="margin: 0;">📍 <%= listing.location %>, <%= listing.country %></p>
+                <% if (listing.reviewCount > 0) { %>
+                  <span class="property-card-rating">⭐ <%= listing.avgRating %></span>
+                <% } else { %>
+                  <span class="property-card-rating new">⭐ New</span>
+                <% } %>
+              </div>
+
+              <h3 class="listing-card-title" style="margin: 4px 0 8px 0; font-size: 1.15rem; color: var(--forest-green);">
+                <a href="/listings/<%= listing._id %>" style="color: inherit; text-decoration: none;">
+                  <%= listing.title %>
+                </a>
+              </h3>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <div class="listing-card-footer" style="padding-bottom: 12px; border-bottom: 1px solid #f0eae1;">
+                <span class="listing-card-price">₹<%= listing.price.toLocaleString() %> <small>/ night</small></span>
+                <span style="font-size: 0.85rem; color: #777;">👥 Up to <%= listing.maxGuests %> guests</span>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 12px;">
+                <a href="/listings/<%= listing._id %>" class="btn btn-primary" style="flex: 1; text-align: center; padding: 8px 12px; font-size: 0.9rem;">
+                  View Stay
+                </a>
+                <button type="button"
+                        class="btn btn-secondary"
+                        style="padding: 8px 12px; font-size: 0.88rem; color: #c53030;"
+                        onclick="toggleWishlist(event, '<%= listing._id %>')">
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+</section>

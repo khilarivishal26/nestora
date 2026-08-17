@@ -124,6 +124,7 @@
     <% } else { %>
       <div class="listing-grid">
         <% featuredListings.forEach(function(listing) { %>
+          <% const isFav = (typeof wishlistListingIds !== 'undefined' && Array.isArray(wishlistListingIds) && wishlistListingIds.includes(listing._id.toString())); %>
           <div class="card listing-card property-card-v2">
             <div class="listing-card-img property-card-media-wrap">
               <% if (listing.images && listing.images.length > 0) { %>
@@ -133,8 +134,12 @@
               <% } %>
 
               <%# Favorite heart button toggle %>
-              <button type="button" class="property-card-favorite-btn" aria-label="Favorite property"
-                      onclick="event.preventDefault(); event.stopPropagation(); this.classList.toggle('active');">
+              <button type="button"
+                      class="property-card-favorite-btn <%= isFav ? 'active' : '' %>"
+                      data-listing-id="<%= listing._id %>"
+                      aria-label="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
+                      title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
+                      onclick="toggleWishlist(event, '<%= listing._id %>')">
                 ♥
               </button>
 

@@ -31,13 +31,14 @@
       <%# ---------- Left Column: Property Details ---------- %>
       <div class="show-details">
 
+        <% const isFav = (typeof wishlistListingIds !== 'undefined' && Array.isArray(wishlistListingIds) && wishlistListingIds.includes(listing._id.toString())); %>
         <%# -- Header -- %>
         <div class="show-header">
           <div>
             <h1 style="color: var(--forest-green); margin: 0 0 6px 0; font-size: 2rem;"><%= listing.title %></h1>
             <p style="color: #666; margin: 0; font-size: 1.05rem;">📍 <%= listing.location %>, <%= listing.country %></p>
           </div>
-          <div style="text-align: right;">
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
             <% if (reviewCount > 0) { %>
               <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
                 <span style="font-size: 1.25rem; font-weight: 700; color: var(--forest-green);">
@@ -50,6 +51,17 @@
             <% } else { %>
               <span style="color: #888; font-size: 0.95rem;">⭐ New (No reviews yet)</span>
             <% } %>
+
+            <%# Wishlist Action Button %>
+            <button type="button"
+                    class="btn-wishlist-detail <%= isFav ? 'active' : '' %>"
+                    data-listing-id="<%= listing._id %>"
+                    aria-label="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
+                    title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
+                    onclick="toggleWishlist(event, '<%= listing._id %>')">
+              <span class="wishlist-icon">♥</span>
+              <span class="wishlist-label"><%= isFav ? 'Saved in Wishlist' : 'Save to Wishlist' %></span>
+            </button>
           </div>
         </div>
 

@@ -128,28 +128,46 @@
   <% } else { %>
     <div class="listing-grid">
       <% listings.forEach(function(listing) { %>
-        <a href="/listings/<%= listing._id %>" class="listing-card card">
-          <div class="listing-card-img">
+        <% const isFav = (typeof wishlistListingIds !== 'undefined' && Array.isArray(wishlistListingIds) && wishlistListingIds.includes(listing._id.toString())); %>
+        <div class="card listing-card property-card-v2">
+          <div class="listing-card-img property-card-media-wrap">
             <% if (listing.images && listing.images.length > 0) { %>
-              <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" />
+              <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" loading="lazy" />
             <% } else { %>
               <div class="listing-card-placeholder">No Image</div>
             <% } %>
+
+            <%# Favorite heart button toggle %>
+            <button type="button"
+                    class="property-card-favorite-btn <%= isFav ? 'active' : '' %>"
+                    data-listing-id="<%= listing._id %>"
+                    aria-label="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
+                    title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
+                    onclick="toggleWishlist(event, '<%= listing._id %>')">
+              ♥
+            </button>
+
+            <%# Property Type Badge %>
+            <span class="property-card-type-tag">
+              <%= listing.propertyType %>
+            </span>
           </div>
 
-          <div class="listing-card-body">
-            <h3 class="listing-card-title"><%= listing.title %></h3>
-            <p class="listing-card-location"><%= listing.location %>, <%= listing.country %></p>
+          <a href="/listings/<%= listing._id %>" class="listing-card-body" style="text-decoration: none; color: inherit; display: block;">
+            <p class="listing-card-location" style="margin: 0 0 4px 0;">📍 <%= listing.location %>, <%= listing.country %></p>
+            <h3 class="listing-card-title" style="margin: 0 0 8px 0; font-size: 1.15rem; color: var(--forest-green);"><%= listing.title %></h3>
             <div class="listing-card-footer">
               <span class="listing-card-price">₹<%= listing.price.toLocaleString() %> <small>/ night</small></span>
-              <span class="badge badge-type"><%= listing.propertyType %></span>
+              <span style="font-size: 0.85rem; color: #777;">👥 Up to <%= listing.maxGuests %> guests</span>
             </div>
 
             <% if (typeof showStatus !== "undefined" && showStatus) { %>
-              <span class="badge badge-status badge-<%= listing.status %>"><%= listing.status %></span>
+              <div style="margin-top: 8px;">
+                <span class="badge badge-status badge-<%= listing.status %>"><%= listing.status %></span>
+              </div>
             <% } %>
-          </div>
-        </a>
+          </a>
+        </div>
       <% }) %>
     </div>
   <% } %>

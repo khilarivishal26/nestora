@@ -12,6 +12,7 @@
           this always falls through to the logged-out links below. %>
       <% if (typeof currentUser !== "undefined" && currentUser) { %>
 
+        <li><a href="/wishlist">Wishlist</a></li>
         <li><a href="/bookings/my">My Trips</a></li>
 
         <% if (currentUser.role === "host" || currentUser.role === "admin") { %>
