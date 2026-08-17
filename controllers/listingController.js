@@ -239,6 +239,25 @@ module.exports.show = async (req, res, next) => {
       avgRating = (total / listing.reviews.length).toFixed(1);
     }
 
+    // Check if the current user has stayed at this property and whether they have reviewed
+    let isEligibleGuest = false;
+    let hasReviewed = false;
+
+    if (req.user && !isOwner) {
+      const eligibleBooking = await Booking.findOne({
+        listing: listing._id,
+        guest: req.user._id,
+        status: { $in: ["confirmed", "completed"] },
+      });
+      isEligibleGuest = Boolean(eligibleBooking);
+
+      if (listing.reviews && listing.reviews.length > 0) {
+        hasReviewed = listing.reviews.some(
+          (r) => r.author && r.author._id.equals(req.user._id)
+        );
+      }
+    }
+
     res.render("listings/show", {
       title: listing.title,
       listing,
@@ -246,6 +265,8 @@ module.exports.show = async (req, res, next) => {
       isAdmin,
       avgRating: Number(avgRating),
       reviewCount: listing.reviews ? listing.reviews.length : 0,
+      isEligibleGuest,
+      hasReviewed,
     });
   } catch (err) {
     next(err);

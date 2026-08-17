@@ -28,6 +28,10 @@ const reviewSchema = new mongoose.Schema(
       ref: "Listing",
       required: [true, "A review must belong to a listing."],
     },
+    booking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+    },
   },
   { timestamps: true }
 );

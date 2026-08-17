@@ -212,39 +212,59 @@
             </h2>
           </div>
 
-          <%# -- Review submission form (logged-in, non-owner, approved only) -- %>
-          <% if (typeof currentUser !== "undefined" && currentUser && !isOwner && listing.status === "approved") { %>
-            <div class="card review-form-card">
-              <h3 style="margin-top: 0; color: var(--forest-green);">Write a Review</h3>
-              <form action="/listings/<%= listing._id %>/reviews" method="POST">
-                <div class="form-group">
-                  <label for="rating">Rating <span class="required">*</span></label>
-                  <select name="rating" id="rating" required>
-                    <option value="">Select your rating…</option>
-                    <option value="5">⭐⭐⭐⭐⭐ 5 Stars — Exceptional</option>
-                    <option value="4">⭐⭐⭐⭐ 4 Stars — Very Good</option>
-                    <option value="3">⭐⭐⭐ 3 Stars — Average</option>
-                    <option value="2">⭐⭐ 2 Stars — Below Expectations</option>
-                    <option value="1">⭐ 1 Star — Poor</option>
-                  </select>
+          <%# -- Review submission form (Verified stay guests only) -- %>
+          <% if (typeof currentUser !== "undefined" && currentUser && listing.status === "approved") { %>
+            <% if (typeof isEligibleGuest !== "undefined" && isEligibleGuest && !hasReviewed) { %>
+              <div class="card review-form-card">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                  <span style="font-size: 1.2rem;">✨</span>
+                  <h3 style="margin: 0; color: var(--forest-green);">Share Your Stay Experience</h3>
                 </div>
-                <div class="form-group">
-                  <label for="body">Your Experience <span class="required">*</span></label>
-                  <textarea name="body" id="body" rows="4" placeholder="How was your stay? Tell future guests about the place, host, and location…" required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Submit Review</button>
-              </form>
-            </div>
+                <p style="color: #666; font-size: 0.9rem; margin: 0 0 16px 0;">
+                  As a verified guest, your review helps future travelers and hosts on Nestora.
+                </p>
+                <form action="/listings/<%= listing._id %>/reviews" method="POST">
+                  <div class="form-group">
+                    <label for="rating">Rating <span class="required">*</span></label>
+                    <select name="rating" id="rating" required>
+                      <option value="">Select your rating…</option>
+                      <option value="5">⭐⭐⭐⭐⭐ 5 Stars — Exceptional</option>
+                      <option value="4">⭐⭐⭐⭐ 4 Stars — Very Good</option>
+                      <option value="3">⭐⭐⭐ 3 Stars — Average</option>
+                      <option value="2">⭐⭐ 2 Stars — Below Expectations</option>
+                      <option value="1">⭐ 1 Star — Poor</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="body">Your Review <span class="required">*</span></label>
+                    <textarea name="body" id="body" rows="4" placeholder="Describe the place, hospitality, cleanliness, and neighborhood…" required></textarea>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Submit Review</button>
+                </form>
+              </div>
+            <% } else if (hasReviewed) { %>
+              <div class="card" style="padding: 18px 24px; margin-bottom: 24px; background: #eaf4ef; border: 1px solid #c8e2d4;">
+                <p style="margin: 0; color: #155724; font-weight: 500;">
+                  ✅ You have submitted a review for this stay. Thank you for your feedback!
+                </p>
+              </div>
+            <% } else if (isOwner) { %>
+              <div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: #fdfaf6; border: 1px solid #ebd9c8;">
+                <p style="margin: 0; color: #886047; font-size: 0.95rem;">
+                  ℹ️ You are the host of this property.
+                </p>
+              </div>
+            <% } else { %>
+              <div class="card" style="padding: 18px 24px; margin-bottom: 24px; background: #fdfaf6; border: 1px solid #eee5da;">
+                <p style="margin: 0; color: #666; font-size: 0.95rem;">
+                  🔒 <strong>Verified Guest Reviews:</strong> Only guests with a confirmed reservation for this property can submit a review.
+                </p>
+              </div>
+            <% } %>
           <% } else if (!currentUser && listing.status === "approved") { %>
             <div class="card" style="padding: 20px; text-align: center; margin-bottom: 24px;">
               <p style="margin: 0; color: #666;">
-                <a href="/login" style="color: var(--terracotta); font-weight: 600;">Log in</a> to write a review.
-              </p>
-            </div>
-          <% } else if (isOwner) { %>
-            <div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: #fdfaf6; border: 1px solid #ebd9c8;">
-              <p style="margin: 0; color: #886047; font-size: 0.95rem;">
-                ℹ️ You are the host of this property.
+                <a href="/login" style="color: var(--terracotta); font-weight: 600;">Log in</a> to view review eligibility.
               </p>
             </div>
           <% } %>
