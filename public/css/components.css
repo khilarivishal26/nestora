@@ -1,0 +1,427 @@
+/* ==========================================================================
+   Nestora — Reusable UI Components
+   Navbar, Buttons, Badges, Cards, Forms, Flash Messages & Footer
+   ========================================================================== */
+
+/* ---------- Navbar ---------- */
+
+.navbar {
+  background-color: var(--forest-green);
+  color: var(--cream);
+  box-shadow: var(--shadow-soft);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--cream);
+  transition: opacity 0.15s;
+}
+
+.navbar-brand:hover {
+  opacity: 0.95;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-links a {
+  color: var(--cream);
+  font-weight: 500;
+  font-size: 0.95rem;
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
+}
+
+.navbar-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.navbar-links .btn-cta {
+  background-color: var(--terracotta);
+  color: var(--white);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.navbar-links .btn-cta:hover {
+  background-color: #c66e48;
+  text-decoration: none;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--cream);
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.9;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+.link-button:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-family: inherit;
+  text-align: center;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--forest-green);
+  color: var(--cream);
+}
+
+.btn-primary:hover {
+  background-color: #123b2e;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--terracotta);
+  color: var(--white);
+}
+
+.btn-secondary:hover {
+  background-color: #c66e48;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: var(--white);
+}
+
+.btn-danger:hover {
+  background-color: #b02a37;
+  transform: translateY(-1px);
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  background-color: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+/* ---------- Badges & Tags ---------- */
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-type {
+  background-color: #e3f0e9;
+  color: var(--forest-green);
+}
+
+.badge-amenity {
+  background-color: #f0eadf;
+  color: #7a6543;
+  margin: 4px 4px 4px 0;
+}
+
+.badge-status {
+  margin-top: 8px;
+}
+
+.badge-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge-approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.badge-booking-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-confirmed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-completed {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.badge-cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* ---------- Forms & Inputs ---------- */
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+  color: var(--charcoal);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--charcoal);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--forest-green);
+  box-shadow: 0 0 0 3px rgba(23, 74, 58, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.required {
+  color: var(--terracotta);
+}
+
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.image-preview img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid #ddd;
+}
+
+.edit-images-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.edit-image-item {
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.edit-image-item img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid #ddd;
+  margin-bottom: 4px;
+}
+
+/* ---------- Flash Messages ---------- */
+
+.flash-container {
+  max-width: 1200px;
+  margin: 16px auto 0;
+  padding: 0 24px;
+}
+
+.flash-message {
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.flash-message.flash-hide {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.flash-success {
+  background-color: #e3f0e9;
+  color: var(--forest-green);
+  border: 1px solid #b7d9c7;
+}
+
+.flash-error {
+  background-color: #fbe7e0;
+  color: #a8492c;
+  border: 1px solid #f0c3ae;
+}
+
+/* ---------- Professional Footer V2 ---------- */
+
+.footer-v2 {
+  background-color: var(--charcoal);
+  color: var(--cream);
+  padding: 56px 0 28px 0;
+  margin-top: 56px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 36px;
+  margin-bottom: 40px;
+}
+
+.footer-logo {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--cream);
+  letter-spacing: 0.5px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.footer-desc {
+  color: rgba(247, 242, 232, 0.75);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+  max-width: 340px;
+}
+
+.footer-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footer-col h4 {
+  color: var(--cream);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-col ul a {
+  color: rgba(247, 242, 232, 0.75);
+  font-size: 0.92rem;
+  transition: color 0.15s;
+}
+
+.footer-col ul a:hover {
+  color: var(--cream);
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: rgba(247, 242, 232, 0.65);
+}
+
+.footer-bottom-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.footer-bottom-links a {
+  color: rgba(247, 242, 232, 0.8);
+}
+
+.footer-bottom-links a:hover {
+  color: var(--cream);
+}

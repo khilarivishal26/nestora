@@ -1,0 +1,62 @@
+/* ==========================================================================
+   Nestora — Base Theme & Global Utilities
+   Forest Green #174A3A | Cream #F7F2E8 | Terracotta #D9825B | Charcoal #202522
+   ========================================================================== */
+
+:root {
+  /* Brand Color Palette */
+  --forest-green: #174a3a;
+  --cream: #f7f2e8;
+  --terracotta: #d9825b;
+  --charcoal: #202522;
+  --white: #ffffff;
+
+  /* UI Tokens */
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 4px 16px rgba(32, 37, 34, 0.08);
+  --shadow-medium: 0 8px 24px rgba(32, 37, 34, 0.12);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+
+/* ---------- Global Reset & Box Sizing ---------- */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--cream);
+  color: var(--charcoal);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ---------- Layout Wrapper ---------- */
+
+main {
+  flex: 1;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
