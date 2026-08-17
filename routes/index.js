@@ -2,12 +2,42 @@
 
 const express = require("express");
 const router = express.Router();
+const Listing = require("../models/Listing");
 const Booking = require("../models/Booking");
 const { isLoggedIn } = require("../middleware/auth");
 
-// Home page
-router.get("/", (req, res) => {
-  res.render("home", { title: "Home" });
+// Home page — fetches featured approved properties with populated ratings
+router.get("/", async (req, res, next) => {
+  try {
+    const featuredListings = await Listing.find({ status: "approved" })
+      .populate({
+        path: "reviews",
+        select: "rating",
+      })
+      .sort({ createdAt: -1 })
+      .limit(6);
+
+    const listingsWithRatings = featuredListings.map((listing) => {
+      let avgRating = 0;
+      const reviewCount = listing.reviews ? listing.reviews.length : 0;
+      if (reviewCount > 0) {
+        const total = listing.reviews.reduce((sum, r) => sum + r.rating, 0);
+        avgRating = (total / reviewCount).toFixed(1);
+      }
+      return {
+        ...listing.toObject(),
+        avgRating: Number(avgRating),
+        reviewCount,
+      };
+    });
+
+    res.render("home", {
+      title: "Find your place. Feel at home.",
+      featuredListings: listingsWithRatings,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Guest Profile & Dashboard

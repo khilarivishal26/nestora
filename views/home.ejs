@@ -1,22 +1,299 @@
 <% layout("layouts/boilerplate") %>
 
-<section class="hero-section">
-  <div class="hero-content">
-    <h1>Find your place. Feel at home.</h1>
-    <p>Discover hotels, villas, cottages, and unique stays across the world.</p>
+<%# ==================== HERO SECTION ==================== %>
+<section class="hero-v2">
+  <div class="container hero-v2-container">
+    <div class="hero-v2-badge">
+      <span>✨ DISCOVER HANDPICKED STAYS ACROSS INDIA & BEYOND</span>
+    </div>
 
-    <form action="/listings" method="GET" class="hero-search">
-      <input type="text" name="q" placeholder="Where do you want to stay?" />
-      <button type="submit" class="btn btn-primary">Search</button>
-    </form>
+    <h1 class="hero-v2-title">Find your place.<br />Feel at home.</h1>
+    <p class="hero-v2-subtitle">
+      From serene mountain chalets in Himachal and beach villas in Goa to royal heritage havelis in Rajasthan.
+    </p>
 
-    <div class="quick-filters">
-      <a href="/listings?propertyType=hotel" class="quick-filter-btn">🏨 Hotels</a>
-      <a href="/listings?propertyType=villa" class="quick-filter-btn">🏡 Villas</a>
-      <a href="/listings?propertyType=resort" class="quick-filter-btn">🌴 Resorts</a>
-      <a href="/listings?propertyType=cottage" class="quick-filter-btn">🏠 Cottages</a>
-      <a href="/listings?propertyType=apartment" class="quick-filter-btn">🏢 Apartments</a>
-      <a href="/listings?propertyType=homestay" class="quick-filter-btn">🛏️ Homestays</a>
+    <%# Comprehensive Multi-Field Hero Search Card %>
+    <div class="hero-search-card">
+      <form action="/listings" method="GET" class="hero-search-grid">
+        <%# Destination Field %>
+        <div class="hero-field">
+          <label for="hero-q">DESTINATION / PROPERTY</label>
+          <div class="hero-field-input-wrap">
+            <span class="hero-field-icon">📍</span>
+            <input type="text" id="hero-q" name="q" placeholder="Where to? (e.g. Manali, Goa, Villa)" />
+          </div>
+        </div>
+
+        <%# Check-in Date %>
+        <div class="hero-field">
+          <label for="hero-checkin">CHECK-IN</label>
+          <div class="hero-field-input-wrap">
+            <span class="hero-field-icon">📅</span>
+            <input type="date" id="hero-checkin" name="checkIn" />
+          </div>
+        </div>
+
+        <%# Check-out Date %>
+        <div class="hero-field">
+          <label for="hero-checkout">CHECKOUT</label>
+          <div class="hero-field-input-wrap">
+            <span class="hero-field-icon">📅</span>
+            <input type="date" id="hero-checkout" name="checkOut" />
+          </div>
+        </div>
+
+        <%# Guests Selector %>
+        <div class="hero-field">
+          <label for="hero-guests">GUESTS</label>
+          <div class="hero-field-input-wrap">
+            <span class="hero-field-icon">👥</span>
+            <select id="hero-guests" name="guests">
+              <option value="">Any Guests</option>
+              <option value="1">1 Guest</option>
+              <option value="2">2 Guests</option>
+              <option value="3">3 Guests</option>
+              <option value="4">4+ Guests</option>
+              <option value="6">6+ Guests</option>
+            </select>
+          </div>
+        </div>
+
+        <%# Search Submit Button %>
+        <div class="hero-field-action">
+          <button type="submit" class="btn btn-primary hero-submit-btn">
+            🔍 Search
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%# ==================== PROPERTY TYPE CATEGORIES ==================== %>
+<section class="category-section">
+  <div class="container">
+    <div class="category-scroll-nav">
+      <a href="/listings?propertyType=villa" class="category-pill">
+        <span class="category-pill-icon">🏡</span>
+        <span class="category-pill-label">Villas</span>
+      </a>
+      <a href="/listings?propertyType=cottage" class="category-pill">
+        <span class="category-pill-icon">🏠</span>
+        <span class="category-pill-label">Cottages</span>
+      </a>
+      <a href="/listings?propertyType=hotel" class="category-pill">
+        <span class="category-pill-icon">🏨</span>
+        <span class="category-pill-label">Hotels</span>
+      </a>
+      <a href="/listings?propertyType=resort" class="category-pill">
+        <span class="category-pill-icon">🌴</span>
+        <span class="category-pill-label">Resorts</span>
+      </a>
+      <a href="/listings?propertyType=apartment" class="category-pill">
+        <span class="category-pill-icon">🏢</span>
+        <span class="category-pill-label">Apartments</span>
+      </a>
+      <a href="/listings?propertyType=homestay" class="category-pill">
+        <span class="category-pill-icon">🛏️</span>
+        <span class="category-pill-label">Homestays</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<%# ==================== POPULAR / FEATURED STAYS ==================== %>
+<section class="home-section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Popular Stays & Getaways</h2>
+        <p class="section-subtitle">Top-rated, verified accommodations loved by travelers on Nestora.</p>
+      </div>
+      <a href="/listings" class="section-header-link">Explore all stays &rarr;</a>
+    </div>
+
+    <% if (!featuredListings || featuredListings.length === 0) { %>
+      <div class="card empty-featured-card">
+        <h3>No featured properties yet</h3>
+        <p>Browse our catalog or become a host to list the very first stay!</p>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 16px;">
+          <a href="/listings" class="btn btn-primary">Browse All Stays</a>
+          <a href="/listings/new" class="btn btn-secondary">+ List Property</a>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="listing-grid">
+        <% featuredListings.forEach(function(listing) { %>
+          <div class="card listing-card property-card-v2">
+            <div class="listing-card-img property-card-media-wrap">
+              <% if (listing.images && listing.images.length > 0) { %>
+                <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" loading="lazy" />
+              <% } else { %>
+                <div class="listing-card-placeholder">No Image Available</div>
+              <% } %>
+
+              <%# Favorite heart button toggle %>
+              <button type="button" class="property-card-favorite-btn" aria-label="Favorite property"
+                      onclick="event.preventDefault(); event.stopPropagation(); this.classList.toggle('active');">
+                ♥
+              </button>
+
+              <%# Property Type Badge %>
+              <span class="property-card-type-tag">
+                <%= listing.propertyType %>
+              </span>
+            </div>
+
+            <a href="/listings/<%= listing._id %>" class="listing-card-body" style="text-decoration: none; color: inherit; display: block;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 4px;">
+                <p class="listing-card-location" style="margin: 0;">📍 <%= listing.location %>, <%= listing.country %></p>
+                <% if (listing.reviewCount > 0) { %>
+                  <span class="property-card-rating">⭐ <%= listing.avgRating %></span>
+                <% } else { %>
+                  <span class="property-card-rating new">⭐ New</span>
+                <% } %>
+              </div>
+
+              <h3 class="listing-card-title" style="margin: 4px 0 8px 0; font-size: 1.15rem; color: var(--forest-green);">
+                <%= listing.title %>
+              </h3>
+
+              <div style="color: #666; font-size: 0.85rem; margin-bottom: 12px;">
+                👥 <%= listing.maxGuests %> guests · 🛏️ <%= listing.bedrooms %> beds · 🚿 <%= listing.bathrooms %> baths
+              </div>
+
+              <div class="listing-card-footer">
+                <div class="listing-card-price">
+                  ₹<%= listing.price.toLocaleString() %>
+                  <small>/ night</small>
+                </div>
+                <span class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">
+                  View Stay
+                </span>
+              </div>
+            </a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<%# ==================== TOP CURATED DESTINATIONS ==================== %>
+<section class="home-section" style="background: #fbf7ee; padding: 60px 0;">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Trending Destinations</h2>
+        <p class="section-subtitle">Explore scenic escapes and vibrant cities across the country.</p>
+      </div>
+    </div>
+
+    <div class="destination-grid">
+      <%# Manali %>
+      <a href="/listings?q=Manali" class="card destination-card">
+        <div class="destination-card-img" style="background: linear-gradient(180deg, rgba(23,74,58,0.2) 0%, rgba(23,74,58,0.85) 100%), url('https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=600&q=80') center/cover;">
+          <div class="destination-card-content">
+            <h3>🏔️ Manali & Himachal</h3>
+            <p>Pine chalets, snowy peaks & mountain cabins</p>
+          </div>
+        </div>
+      </a>
+
+      <%# Goa %>
+      <a href="/listings?q=Goa" class="card destination-card">
+        <div class="destination-card-img" style="background: linear-gradient(180deg, rgba(23,74,58,0.2) 0%, rgba(23,74,58,0.85) 100%), url('https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=600&q=80') center/cover;">
+          <div class="destination-card-content">
+            <h3>🌊 Goa & Coastal</h3>
+            <p>Private pool villas, seaside shacks & palm groves</p>
+          </div>
+        </div>
+      </a>
+
+      <%# Jaipur %>
+      <a href="/listings?q=Jaipur" class="card destination-card">
+        <div class="destination-card-img" style="background: linear-gradient(180deg, rgba(23,74,58,0.2) 0%, rgba(23,74,58,0.85) 100%), url('https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80') center/cover;">
+          <div class="destination-card-content">
+            <h3>🏰 Jaipur & Rajasthan</h3>
+            <p>Royal heritage havelis & regal palace suites</p>
+          </div>
+        </div>
+      </a>
+
+      <%# Kerala %>
+      <a href="/listings?q=Kerala" class="card destination-card">
+        <div class="destination-card-img" style="background: linear-gradient(180deg, rgba(23,74,58,0.2) 0%, rgba(23,74,58,0.85) 100%), url('https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80') center/cover;">
+          <div class="destination-card-content">
+            <h3>🌴 Kerala Backwaters</h3>
+            <p>Tranquil resorts, spice plantations & homestays</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<%# ==================== VALUE PILLARS / WHY NESTORA ==================== %>
+<section class="home-section" style="padding: 60px 0;">
+  <div class="container">
+    <div class="section-header" style="text-align: center; margin-bottom: 40px;">
+      <div>
+        <h2 class="section-title" style="margin: 0 auto;">Why Travelers Love Nestora</h2>
+        <p class="section-subtitle" style="margin: 6px auto 0 auto; max-width: 540px;">
+          Built for seamless discovery, transparent bookings, and unforgettable hospitality.
+        </p>
+      </div>
+    </div>
+
+    <div class="feature-pillars-grid">
+      <div class="card feature-pillar-card">
+        <div class="feature-pillar-icon">🛡️</div>
+        <h3>Verified Stays & Hosts</h3>
+        <p>Every accommodation is reviewed by our admin team before appearing publicly.</p>
+      </div>
+
+      <div class="card feature-pillar-card">
+        <div class="feature-pillar-icon">💳</div>
+        <h3>100% Secure Checkout</h3>
+        <p>Transparent pricing with zero hidden fees. Seamless payments powered by Stripe.</p>
+      </div>
+
+      <div class="card feature-pillar-card">
+        <div class="feature-pillar-icon">⚡</div>
+        <h3>Instant Confirmation</h3>
+        <p>Real-time date availability protection prevents double bookings effortlessly.</p>
+      </div>
+
+      <div class="card feature-pillar-card">
+        <div class="feature-pillar-icon">⭐</div>
+        <h3>Verified Guest Reviews</h3>
+        <p>Authentic feedback and ratings written exclusively by guests with confirmed stays.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# ==================== HOST CONVERSION CTA BANNER ==================== %>
+<section class="container" style="margin-bottom: 60px;">
+  <div class="host-cta-banner">
+    <div class="host-cta-content">
+      <span class="badge badge-booking-status badge-pending" style="font-size: 0.85rem; padding: 4px 14px; margin-bottom: 12px;">
+        BECOME A NESTORA HOST
+      </span>
+      <h2 style="color: var(--white); font-size: 2rem; margin: 0 0 12px 0;">
+        Earn by sharing your space
+      </h2>
+      <p style="color: rgba(255,255,255,0.9); font-size: 1.05rem; max-width: 580px; margin: 0 0 24px 0; line-height: 1.6;">
+        List your villa, cottage, apartment, or hotel room and welcome travelers from across the world. Get paid securely on every booking.
+      </p>
+      <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+        <a href="/become-host" class="btn btn-secondary" style="padding: 12px 28px; font-size: 1.05rem;">
+          Start Hosting Today
+        </a>
+        <a href="/listings" class="btn" style="background: rgba(255,255,255,0.2); color: var(--white); padding: 12px 24px;">
+          Explore Stays
+        </a>
+      </div>
     </div>
   </div>
 </section>
