@@ -18,6 +18,7 @@ const reviewsRouter = require("./routes/reviews");
 const bookingsRouter = require("./routes/bookings");
 const hostRouter = require("./routes/host");
 const adminRouter = require("./routes/admin");
+const paymentController = require("./controllers/paymentController");
 const { notFound, errorHandler } = require("./middleware/error");
 
 const app = express();
@@ -29,9 +30,15 @@ app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Parse form submissions.
+// Parse form submissions and capture raw body for Stripe webhook verification
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 // method-override lets HTML forms send PUT and DELETE requests via a
 // query-string flag, e.g. POST /listings/123?_method=DELETE.
@@ -84,6 +91,8 @@ app.use((req, res, next) => {
   res.locals.mapboxToken = process.env.MAPBOX_TOKEN || "";
   next();
 });
+
+app.post("/webhook/stripe", paymentController.handleWebhook);
 
 app.use("/", indexRouter);
 app.use("/", authRouter);

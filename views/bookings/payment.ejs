@@ -1,0 +1,116 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 48px 24px; max-width: 800px; margin: 0 auto;">
+
+  <%# Header %>
+  <div style="margin-bottom: 28px; text-align: center;">
+    <span class="badge badge-booking-status badge-pending" style="font-size: 0.85rem; padding: 4px 14px; margin-bottom: 10px; display: inline-block;">
+      STEP 2 OF 2: SECURE PAYMENT
+    </span>
+    <h1 style="color: var(--forest-green); margin: 0 0 8px 0; font-size: 2rem;">Confirm & Pay</h1>
+    <p style="color: #666; margin: 0; font-size: 1rem;">Complete your payment to confirm your stay at <strong><%= booking.listing ? booking.listing.title : 'Selected Property' %></strong>.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+
+    <%# Left Column: Stay Details & Protection %>
+    <div class="card" style="padding: 24px;">
+      <h2 style="color: var(--forest-green); margin: 0 0 16px 0; font-size: 1.25rem;">Stay Overview</h2>
+
+      <% if (booking.listing && booking.listing.images && booking.listing.images.length > 0) { %>
+        <div style="width: 100%; height: 160px; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+          <img src="<%= booking.listing.images[0] %>" alt="<%= booking.listing.title %>" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+      <% } %>
+
+      <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: var(--charcoal);">
+        <%= booking.listing ? booking.listing.title : 'Property' %>
+      </h3>
+      <p style="color: #666; font-size: 0.9rem; margin: 0 0 16px 0;">
+        📍 <%= booking.listing ? booking.listing.location : '' %>, <%= booking.listing ? booking.listing.country : '' %>
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem;">
+          <span style="color: #666;">Check-In:</span>
+          <strong><%= booking.checkIn.toDateString() %></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem;">
+          <span style="color: #666;">Checkout:</span>
+          <strong><%= booking.checkOut.toDateString() %></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem;">
+          <span style="color: #666;">Duration:</span>
+          <strong><%= booking.nights %> night<%= booking.nights !== 1 ? 's' : '' %></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem;">
+          <span style="color: #666;">Guests:</span>
+          <strong><%= booking.guests %> guest<%= booking.guests !== 1 ? 's' : '' %></strong>
+        </div>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+
+      <div style="background: #eaf4ef; border-radius: 8px; padding: 14px; border: 1px solid #c8e2d4;">
+        <div style="display: flex; align-items: center; gap: 8px; color: #155724; font-size: 0.88rem; font-weight: 600;">
+          🔒 Nestora Booking Guarantee
+        </div>
+        <p style="color: #155724; font-size: 0.82rem; margin: 4px 0 0 0;">
+          Your payment is held securely and only released to the host upon successful check-in.
+        </p>
+      </div>
+    </div>
+
+    <%# Right Column: Price Breakdown & Payment Button %>
+    <div class="card" style="padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h2 style="color: var(--forest-green); margin: 0 0 16px 0; font-size: 1.25rem;">Payment Summary</h2>
+
+        <div class="booking-breakdown" style="margin-bottom: 20px;">
+          <div class="booking-breakdown-row">
+            <span>₹<%= booking.pricePerNight.toLocaleString() %> × <%= booking.nights %> night<%= booking.nights !== 1 ? 's' : '' %></span>
+            <span>₹<%= (booking.nights * booking.pricePerNight).toLocaleString() %></span>
+          </div>
+          <div class="booking-breakdown-row">
+            <span>Nestora Service Fee (5%)</span>
+            <span>₹<%= booking.serviceFee.toLocaleString() %></span>
+          </div>
+          <hr style="border: none; border-top: 1px solid #eee5da; margin: 10px 0;" />
+          <div class="booking-breakdown-row total">
+            <strong>Total Payable (INR)</strong>
+            <strong style="color: var(--forest-green); font-size: 1.25rem;">₹<%= booking.totalPrice.toLocaleString() %></strong>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #666; font-size: 0.88rem;">
+            <span>💳</span>
+            <span>Supports Credit Card, Debit Card, NetBanking & UPI via Stripe</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; color: #666; font-size: 0.88rem;">
+            <span>🛡️</span>
+            <span>256-bit SSL encrypted checkout</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <form action="/bookings/<%= booking._id %>/checkout" method="POST">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.1rem; text-align: center; display: block; box-sizing: border-box;">
+            💳 Pay ₹<%= booking.totalPrice.toLocaleString() %> with Stripe
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 14px;">
+          <a href="/bookings/my" style="color: #777; font-size: 0.9rem; text-decoration: none;">
+            ← Return to My Reservations
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</section>

@@ -154,6 +154,11 @@
                 <a href="/bookings/<%= booking._id %>" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.88rem;">
                   View Receipt
                 </a>
+                <% if (booking.paymentStatus !== "paid" && booking.status !== "cancelled") { %>
+                  <a href="/bookings/<%= booking._id %>/payment" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.88rem;">
+                    💳 Complete Payment
+                  </a>
+                <% } %>
                 <form action="/bookings/<%= booking._id %>/cancel?_method=PUT" method="POST" style="display: inline;"
                       onsubmit="return confirm('Cancel this upcoming reservation?');">
                   <button type="submit" class="btn btn-danger" style="padding: 6px 14px; font-size: 0.88rem;">

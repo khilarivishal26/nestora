@@ -119,7 +119,8 @@ module.exports.create = async (req, res, next) => {
       pricePerNight,
       serviceFee,
       totalPrice,
-      status: "confirmed",
+      status: "pending",
+      paymentStatus: "pending",
     });
 
     await booking.save();
@@ -127,8 +128,8 @@ module.exports.create = async (req, res, next) => {
     listing.bookings.push(booking._id);
     await listing.save();
 
-    req.flash("success", "Reservation confirmed! Your stay is booked.");
-    res.redirect(`/bookings/${booking._id}`);
+    req.flash("success", "Reservation initiated! Please complete payment to confirm your stay.");
+    res.redirect(`/bookings/${booking._id}/payment`);
   } catch (err) {
     next(err);
   }

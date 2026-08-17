@@ -68,9 +68,14 @@
                 <div style="color: #888; font-size: 0.8rem;">(₹<%= booking.pricePerNight %>/night)</div>
               </td>
               <td>
-                <span class="badge badge-booking-status badge-<%= booking.status %>">
-                  <%= booking.status.toUpperCase() %>
-                </span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="badge badge-booking-status badge-<%= booking.status %>">
+                    <%= booking.status.toUpperCase() %>
+                  </span>
+                  <span class="badge badge-booking-status <%= booking.paymentStatus === 'paid' ? 'badge-confirmed' : 'badge-pending' %>" style="font-size: 0.7rem; padding: 2px 6px;">
+                    💳 <%= (booking.paymentStatus || 'pending').toUpperCase() %>
+                  </span>
+                </div>
               </td>
               <td>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
