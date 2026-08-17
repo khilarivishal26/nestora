@@ -5,14 +5,30 @@
 const mongoose = require("mongoose");
 
 async function connectDB() {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/nestora";
 
-  if (!uri) {
-    throw new Error("MONGODB_URI is not set. Check your .env file.");
+  try {
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    console.log(`MongoDB connected: ${mongoose.connection.name}`);
+  } catch (err) {
+    if (uri.startsWith("mongodb+srv://") && process.env.NODE_ENV !== "production") {
+      console.warn(
+        `MongoDB Atlas connection failed (${err.message}). Attempting fallback to local MongoDB instance...`
+      );
+      try {
+        await mongoose.connect("mongodb://127.0.0.1:27017/nestora", {
+          serverSelectionTimeoutMS: 5000,
+        });
+        console.log(`MongoDB fallback connected: ${mongoose.connection.name}`);
+        return;
+      } catch (localErr) {
+        throw new Error(`Failed to connect to MongoDB: ${err.message}`);
+      }
+    }
+    throw err;
   }
-
-  await mongoose.connect(uri);
-  console.log(`MongoDB connected: ${mongoose.connection.name}`);
 }
 
 module.exports = connectDB;

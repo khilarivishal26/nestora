@@ -2,6 +2,7 @@
 
 require("dotenv").config();
 
+const mongoose = require("mongoose");
 const express = require("express");
 const path = require("path");
 const ejsMate = require("ejs-mate");
@@ -22,7 +23,13 @@ const paymentController = require("./controllers/paymentController");
 const { notFound, errorHandler } = require("./middleware/error");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
+
+// In production behind reverse proxies (Render, Railway, AWS, NGINX),
+// trust the proxy header so secure cookies and client IPs are handled properly.
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 // EJS-Mate lets pages declare a shared layout (views/layouts/boilerplate.ejs)
 // instead of duplicating the full HTML document on every page.
@@ -47,10 +54,10 @@ app.use(methodOverride("_method"));
 // Serve static assets (CSS/JS) from /public.
 app.use(express.static(path.join(__dirname, "public")));
 
-// Sessions are stored in MongoDB (not memory), so logins survive server
-// restarts and work correctly if we ever run more than one server process.
+// Sessions are stored in MongoDB (not memory), reusing the active Mongoose
+// connection so sessions survive server restarts and avoid duplicate connections.
 const sessionStore = MongoStore.create({
-  mongoUrl: process.env.MONGODB_URI,
+  clientPromise: mongoose.connection.asPromise().then(() => mongoose.connection.getClient()),
   touchAfter: 24 * 60 * 60, // only re-save an unchanged session once a day
 });
 
@@ -89,8 +96,22 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.user;
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
-  res.locals.mapboxToken = process.env.MAPBOX_TOKEN || "";
+  res.locals.mapboxAccessToken = process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_TOKEN || "";
+  res.locals.mapboxToken = res.locals.mapboxAccessToken;
   next();
+});
+
+// Health check route for cloud liveness & readiness probes
+app.get("/health", (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  res.status(isDbConnected ? 200 : 503).json({
+    status: isDbConnected ? "ok" : "degraded",
+    service: "nestora",
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: isDbConnected ? "connected" : "disconnected",
+    environment: process.env.NODE_ENV || "development",
+  });
 });
 
 app.post("/webhook/razorpay", paymentController.handleWebhook);
@@ -112,10 +133,11 @@ app.use(errorHandler);
 
 // The server only starts listening once the database connection succeeds.
 // This avoids accepting traffic that would immediately fail on DB access.
+let server;
 async function startServer() {
   try {
     await connectDB();
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`Nestora server running on http://localhost:${PORT}`);
     });
   } catch (err) {
@@ -123,5 +145,27 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+function gracefulShutdown(signal) {
+  console.log(`Received ${signal}. Shutting down gracefully...`);
+  if (server) {
+    server.close(async () => {
+      console.log("HTTP server closed.");
+      try {
+        await mongoose.connection.close();
+        console.log("MongoDB connection closed.");
+        process.exit(0);
+      } catch (e) {
+        console.error("Error closing MongoDB connection:", e);
+        process.exit(1);
+      }
+    });
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();
