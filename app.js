@@ -16,6 +16,7 @@ const authRouter = require("./routes/auth");
 const listingsRouter = require("./routes/listings");
 const reviewsRouter = require("./routes/reviews");
 const bookingsRouter = require("./routes/bookings");
+const hostRouter = require("./routes/host");
 const adminRouter = require("./routes/admin");
 const { notFound, errorHandler } = require("./middleware/error");
 
@@ -89,6 +90,7 @@ app.use("/", authRouter);
 app.use("/listings", listingsRouter);
 app.use("/listings/:id/reviews", reviewsRouter);
 app.use("/bookings", bookingsRouter);
+app.use("/host", hostRouter);
 app.use("/admin", adminRouter);
 
 // Any request that didn't match a route above falls through to here.

@@ -1122,6 +1122,41 @@ main {
   color: #383d41;
 }
 
+/* ---------- Dashboard Stats Grid & Cards ---------- */
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.dashboard-stat-card {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #777;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-stat-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--charcoal);
+  line-height: 1.2;
+}
+
+.dashboard-stat-sub {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 2px;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 640px) {

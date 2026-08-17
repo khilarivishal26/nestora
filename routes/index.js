@@ -1,23 +1,55 @@
+// Nestora index routes — Phase 7: Guest Dashboard & Profile.
+
 const express = require("express");
 const router = express.Router();
+const Booking = require("../models/Booking");
 const { isLoggedIn } = require("../middleware/auth");
 
-// Renders the temporary Phase 1 home page through the shared layout.
-// Full home page content (hero, search, featured listings) is Step 18.
+// Home page
 router.get("/", (req, res) => {
   res.render("home", { title: "Home" });
 });
 
-// Temporary Phase 1 verification page - proves isLoggedIn middleware
-// and session-based auth work end to end. Becomes the real profile
-// page in a later phase.
-router.get("/profile", isLoggedIn, (req, res) => {
-  res.render("profile", { title: "Profile" });
+// Guest Profile & Dashboard
+router.get("/profile", isLoggedIn, async (req, res, next) => {
+  try {
+    const bookings = await Booking.find({ guest: req.user._id })
+      .populate({
+        path: "listing",
+        populate: { path: "owner", select: "username email" },
+      })
+      .sort({ createdAt: -1 });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const upcomingBookings = bookings.filter(
+      (b) => b.status === "confirmed" && new Date(b.checkIn) >= today
+    );
+    const pastBookings = bookings.filter(
+      (b) => b.status === "completed" || (b.status === "confirmed" && new Date(b.checkOut) < today)
+    );
+    const cancelledBookings = bookings.filter((b) => b.status === "cancelled");
+
+    const totalSpent = bookings
+      .filter((b) => b.status !== "cancelled")
+      .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+
+    res.render("profile", {
+      title: "My Dashboard",
+      bookings,
+      upcomingBookings,
+      pastBookings,
+      cancelledBookings,
+      totalSpent,
+      totalTrips: bookings.filter((b) => b.status !== "cancelled").length,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// Upgrade the logged-in user's role from "guest" to "host" so they
-// can create property listings.  This is the minimal mechanism needed
-// for Phase 2 — a full host-onboarding flow can replace it later.
+// Upgrade user to host
 router.post("/become-host", isLoggedIn, async (req, res, next) => {
   try {
     if (req.user.role === "host" || req.user.role === "admin") {
@@ -28,8 +60,8 @@ router.post("/become-host", isLoggedIn, async (req, res, next) => {
     req.user.role = "host";
     await req.user.save();
 
-    req.flash("success", "You are now a host! You can list properties.");
-    res.redirect("/profile");
+    req.flash("success", "Congratulations! You are now a host. You can start listing properties.");
+    res.redirect("/host/dashboard");
   } catch (err) {
     next(err);
   }

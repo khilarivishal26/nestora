@@ -1,31 +1,62 @@
 <% layout("layouts/boilerplate") %>
 
-<section class="container admin-section">
-  <div class="admin-header">
-    <h1>Admin Dashboard</h1>
-    <p>Review pending properties submitted by hosts.</p>
+<section class="container admin-section" style="padding: 40px 24px;">
+  <div class="admin-header" style="margin-bottom: 28px;">
+    <h1 style="color: var(--forest-green); margin: 0 0 6px 0;">Admin Control Center</h1>
+    <p style="color: #666; margin: 0;">Platform overview, property review queue, booking volumes, and user management.</p>
   </div>
 
-  <div class="admin-stats">
-    <div class="card admin-stat-card">
-      <span class="admin-stat-label">Pending</span>
-      <span class="admin-stat-value"><%= pendingCount %></span>
+  <%# Platform Analytics KPI Grid %>
+  <div class="dashboard-stats-grid" style="margin-bottom: 32px;">
+    <div class="card dashboard-stat-card">
+      <span class="dashboard-stat-label">TOTAL USERS</span>
+      <span class="dashboard-stat-value" style="color: var(--forest-green);"><%= totalUsers %></span>
+      <span class="dashboard-stat-sub">
+        <strong><%= totalHosts %> hosts</strong> · <strong><%= totalGuests %> guests</strong>
+      </span>
     </div>
-    <div class="card admin-stat-card">
-      <span class="admin-stat-label">Approved</span>
-      <span class="admin-stat-value"><%= approvedCount %></span>
+
+    <div class="card dashboard-stat-card">
+      <span class="dashboard-stat-label">TOTAL PROPERTIES</span>
+      <span class="dashboard-stat-value"><%= totalProperties %></span>
+      <span class="dashboard-stat-sub">
+        <strong style="color: #155724;"><%= approvedCount %> live</strong> · 
+        <strong style="color: #856404;"><%= pendingCount %> pending</strong> · 
+        <strong style="color: #721c24;"><%= rejectedCount %> rejected</strong>
+      </span>
     </div>
-    <div class="card admin-stat-card">
-      <span class="admin-stat-label">Rejected</span>
-      <span class="admin-stat-value"><%= rejectedCount %></span>
+
+    <div class="card dashboard-stat-card">
+      <span class="dashboard-stat-label">TOTAL RESERVATIONS</span>
+      <span class="dashboard-stat-value" style="color: var(--terracotta);"><%= totalBookingsCount %></span>
+      <span class="dashboard-stat-sub">Bookings across all stays</span>
+    </div>
+
+    <div class="card dashboard-stat-card">
+      <span class="dashboard-stat-label">PLATFORM VOLUME</span>
+      <span class="dashboard-stat-value" style="color: var(--forest-green);">₹<%= grossBookingVolume.toLocaleString() %></span>
+      <span class="dashboard-stat-sub">
+        Fees earned: <strong>₹<%= platformRevenue.toLocaleString() %></strong>
+      </span>
     </div>
   </div>
 
-  <div class="card admin-table-card">
-    <h2 style="margin-top: 0; color: var(--forest-green);">Pending review</h2>
+  <%# Pending Property Approvals Queue %>
+  <div class="card admin-table-card" style="margin-bottom: 32px; padding: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h2 style="margin: 0 0 4px 0; color: var(--forest-green);">Pending Property Reviews (<%= listings.length %>)</h2>
+        <p style="color: #666; margin: 0; font-size: 0.95rem;">Review and approve host property submissions before they appear publicly.</p>
+      </div>
+      <% if (pendingCount > 0) { %>
+        <span class="badge badge-booking-status badge-pending"><%= pendingCount %> ACTION REQUIRED</span>
+      <% } %>
+    </div>
 
     <% if (listings.length === 0) { %>
-      <p style="color: #666; margin: 0;">No properties awaiting approval.</p>
+      <div style="text-align: center; padding: 36px 20px; background: #fdfaf6; border-radius: var(--radius);">
+        <p style="color: #666; font-size: 1rem; margin: 0;">✨ All caught up! No properties currently awaiting approval.</p>
+      </div>
     <% } else { %>
       <div class="admin-table-wrap">
         <table class="admin-table">
@@ -34,6 +65,7 @@
               <th>Property</th>
               <th>Location</th>
               <th>Host</th>
+              <th>Price/Night</th>
               <th>Submitted</th>
               <th>Actions</th>
             </tr>
@@ -51,28 +83,34 @@
                       <% } %>
                     </div>
                     <div>
-                      <strong><%= listing.title %></strong>
-                      <div style="color: #666; font-size: 0.9rem;">
-                        ₹<%= listing.price.toLocaleString() %> / night
+                      <strong>
+                        <a href="/listings/<%= listing._id %>" style="color: var(--forest-green); text-decoration: none;">
+                          <%= listing.title %>
+                        </a>
+                      </strong>
+                      <div style="color: #666; font-size: 0.85rem;">
+                        <span class="badge badge-type" style="text-transform: capitalize;"><%= listing.propertyType %></span>
+                        · <%= listing.maxGuests %> guests
                       </div>
                     </div>
                   </div>
                 </td>
                 <td><%= listing.location %>, <%= listing.country %></td>
                 <td>
-                  <%= listing.owner.username %><br />
-                  <span style="color: #666; font-size: 0.9rem;"><%= listing.owner.email %></span>
+                  <%= listing.owner ? listing.owner.username : 'N/A' %><br />
+                  <span style="color: #666; font-size: 0.85rem;"><%= listing.owner ? listing.owner.email : '' %></span>
                 </td>
+                <td><strong>₹<%= listing.price.toLocaleString() %></strong></td>
                 <td><%= listing.createdAt.toDateString() %></td>
                 <td>
                   <div class="admin-table-actions">
-                    <a href="/listings/<%= listing._id %>" class="btn btn-secondary">View</a>
+                    <a href="/listings/<%= listing._id %>" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.85rem;">Review</a>
                     <form action="/admin/listings/<%= listing._id %>/approve?_method=PUT" method="POST">
-                      <button type="submit" class="btn btn-primary">Approve</button>
+                      <button type="submit" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.85rem;">Approve</button>
                     </form>
                     <form action="/admin/listings/<%= listing._id %>/reject?_method=PUT" method="POST"
-                          onsubmit="return confirm('Reject this property?');">
-                      <button type="submit" class="btn btn-danger">Reject</button>
+                          onsubmit="return confirm('Reject this property listing?');">
+                      <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.85rem;">Reject</button>
                     </form>
                   </div>
                 </td>
@@ -83,4 +121,82 @@
       </div>
     <% } %>
   </div>
+
+  <%# Two Column Grid: Recent Bookings & Registered Users %>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+
+    <%# Recent Bookings %>
+    <div class="card" style="padding: 28px;">
+      <h2 style="color: var(--forest-green); margin: 0 0 16px 0; font-size: 1.25rem;">Recent Platform Bookings</h2>
+      <% if (recentBookings.length === 0) { %>
+        <p style="color: #666;">No bookings on platform yet.</p>
+      <% } else { %>
+        <div class="admin-table-wrap">
+          <table class="admin-table" style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>Guest</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentBookings.forEach(function(b) { %>
+                <tr>
+                  <td>
+                    <strong><%= b.listing ? b.listing.title : 'Deleted Property' %></strong>
+                  </td>
+                  <td><%= b.guest ? b.guest.username : 'N/A' %></td>
+                  <td><strong>₹<%= b.totalPrice.toLocaleString() %></strong></td>
+                  <td>
+                    <span class="badge badge-booking-status badge-<%= b.status %>" style="font-size: 0.7rem; padding: 2px 6px;">
+                      <%= b.status.toUpperCase() %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <%# User Directory %>
+    <div class="card" style="padding: 28px;">
+      <h2 style="color: var(--forest-green); margin: 0 0 16px 0; font-size: 1.25rem;">Platform Users Overview</h2>
+      <% if (recentUsers.length === 0) { %>
+        <p style="color: #666;">No users registered yet.</p>
+      <% } else { %>
+        <div class="admin-table-wrap">
+          <table class="admin-table" style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentUsers.forEach(function(u) { %>
+                <tr>
+                  <td><strong><%= u.username %></strong></td>
+                  <td><span style="color: #666;"><%= u.email %></span></td>
+                  <td>
+                    <span class="badge <%= u.role === 'admin' ? 'badge-type' : u.role === 'host' ? 'badge-amenity' : 'badge-status badge-approved' %>" style="font-size: 0.75rem; text-transform: uppercase;">
+                      <%= u.role %>
+                    </span>
+                  </td>
+                  <td><%= u.createdAt.toDateString() %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+
 </section>
