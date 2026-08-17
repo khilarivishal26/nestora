@@ -73,7 +73,11 @@ module.exports.index = async (req, res, next) => {
         : amenities.split(",").map((a) => a.trim()).filter(Boolean);
       if (amenityList.length > 0) {
         // $all = listing must have every requested amenity.
-        filter.amenities = { $all: amenityList.map((a) => new RegExp(a, "i")) };
+        filter.amenities = {
+          $all: amenityList.map(
+            (a) => new RegExp(a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+          ),
+        };
       }
     }
 

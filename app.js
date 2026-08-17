@@ -66,6 +66,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      sameSite: "lax",
       // secure cookies require HTTPS - only turn this on in production,
       // otherwise the cookie won't be set at all over plain HTTP in dev.
       secure: process.env.NODE_ENV === "production",

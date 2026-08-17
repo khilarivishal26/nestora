@@ -44,7 +44,11 @@ module.exports.register = async (req, res, next) => {
     }
 
     // password is hashed automatically by the pre("save") hook on User.
-    const newUser = new User({ username: username.trim(), email, password });
+    const newUser = new User({
+      username: username.trim(),
+      email: email.toLowerCase().trim(),
+      password,
+    });
     await newUser.save();
 
     // Log the new user in immediately rather than sending them back to
