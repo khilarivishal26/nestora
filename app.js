@@ -93,7 +93,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post("/webhook/stripe", paymentController.handleWebhook);
+app.post("/webhook/razorpay", paymentController.handleWebhook);
 
 app.use("/", indexRouter);
 app.use("/", authRouter);

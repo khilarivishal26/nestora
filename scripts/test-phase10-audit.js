@@ -168,7 +168,7 @@ async function runAuditTests() {
   // Simulate successful server-side payment verification
   booking.status = "confirmed";
   booking.paymentStatus = "paid";
-  booking.stripePaymentIntentId = "pi_audit_test_999";
+  booking.razorpayPaymentId = "pay_audit_test_999";
   booking.paidAt = new Date();
   await booking.save();
 
@@ -179,9 +179,9 @@ async function runAuditTests() {
     amount: booking.totalPrice,
     currency: "INR",
     status: "succeeded",
-    provider: "stripe",
-    stripeSessionId: "cs_audit_test_999",
-    stripePaymentIntentId: "pi_audit_test_999",
+    provider: "razorpay",
+    razorpayOrderId: "order_audit_test_999",
+    razorpayPaymentId: "pay_audit_test_999",
   });
 
   assert(booking.status === "confirmed", "Booking confirmed after successful payment");

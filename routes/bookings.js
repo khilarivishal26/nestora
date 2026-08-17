@@ -14,11 +14,12 @@ router.get("/my", isLoggedIn, bookingController.myBookings);
 // Host view of incoming reservations for their properties
 router.get("/host", isLoggedIn, isHost, bookingController.hostBookings);
 
-// Payment & Checkout routes
+// Razorpay Payment & Checkout routes
 router.get("/:id/payment", isLoggedIn, paymentController.showPaymentPage);
-router.post("/:id/checkout", isLoggedIn, paymentController.createCheckoutSession);
-router.get("/:id/payment/success", isLoggedIn, paymentController.handlePaymentSuccess);
-router.get("/:id/payment/cancel", isLoggedIn, paymentController.handlePaymentCancel);
+router.post("/:id/verify", isLoggedIn, paymentController.verifyPayment);
+router.post("/:id/payment/verify", isLoggedIn, paymentController.verifyPayment);
+router.post("/:id/failed", isLoggedIn, paymentController.handlePaymentFailure);
+router.get("/:id/payment/cancel", isLoggedIn, paymentController.handlePaymentFailure);
 
 // Show single booking confirmation details
 router.get("/:id", isLoggedIn, bookingController.show);

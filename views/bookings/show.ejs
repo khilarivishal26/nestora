@@ -54,7 +54,7 @@
         <div>
           <h3 style="margin: 0 0 4px 0; color: #856404; font-size: 1.1rem;">Payment Required to Secure Stay</h3>
           <p style="margin: 0; color: #666; font-size: 0.9rem;">
-            Please complete checkout with Stripe to confirm your reservation and guarantee availability.
+            Please complete checkout with Razorpay to confirm your reservation and guarantee availability.
           </p>
         </div>
         <a href="/bookings/<%= booking._id %>/payment" class="btn btn-primary" style="padding: 10px 20px;">
@@ -149,8 +149,8 @@
           <% if (booking.paidAt) { %>
             <span style="font-size: 0.85rem; color: #666;">Paid on: <strong><%= booking.paidAt.toDateString() %></strong></span>
           <% } %>
-          <% if (booking.stripePaymentIntentId) { %>
-            <span style="font-size: 0.8rem; color: #888; font-family: monospace;">Ref: <%= booking.stripePaymentIntentId %></span>
+          <% if (booking.razorpayPaymentId || booking.stripePaymentIntentId) { %>
+            <span style="font-size: 0.8rem; color: #888; font-family: monospace;">Ref: <%= booking.razorpayPaymentId || booking.stripePaymentIntentId %></span>
           <% } %>
         </div>
       </div>

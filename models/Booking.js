@@ -61,12 +61,15 @@ const bookingSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      default: "stripe",
+      default: "razorpay",
     },
-    stripeSessionId: {
+    razorpayOrderId: {
       type: String,
     },
-    stripePaymentIntentId: {
+    razorpayPaymentId: {
+      type: String,
+    },
+    razorpaySignature: {
       type: String,
     },
     paidAt: {
