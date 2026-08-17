@@ -307,7 +307,7 @@
           <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
 
           <%# Booking Form & Calculations %>
-          <form id="booking-form" onsubmit="event.preventDefault(); handleReserve();">
+          <form id="booking-form" action="/listings/<%= listing._id %>/bookings" method="POST">
 
             <%# Dates Inputs %>
             <div class="booking-date-inputs">
@@ -324,7 +324,7 @@
             <%# Guests Input %>
             <div class="booking-guest-field" style="margin-top: 12px;">
               <label for="bookingGuests">GUESTS</label>
-              <select id="bookingGuests" name="guests">
+              <select id="bookingGuests" name="guests" required>
                 <% for (let i = 1; i <= listing.maxGuests; i++) { %>
                   <option value="<%= i %>"><%= i %> guest<%= i !== 1 ? 's' : '' %></option>
                 <% } %>
@@ -334,8 +334,8 @@
             <%# Dynamic Price Calculation Summary %>
             <div id="booking-breakdown" class="booking-breakdown" style="display: none; margin-top: 20px;">
               <div class="booking-breakdown-row">
-                <span id="price-calc-label">₹<%= listing.price %> × 1 night</span>
-                <span id="price-calc-subtotal">₹<%= listing.price %></span>
+                <span id="price-calc-label">₹<%= listing.price.toLocaleString() %> × 1 night</span>
+                <span id="price-calc-subtotal">₹<%= listing.price.toLocaleString() %></span>
               </div>
               <div class="booking-breakdown-row">
                 <span>Nestora service fee (5%)</span>
@@ -350,12 +350,19 @@
 
             <%# Reserve Button %>
             <div style="margin-top: 20px;">
-              <% if (listing.status === "approved" && !isOwner) { %>
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 600;">
-                  Reserve
-                </button>
+              <% if (!currentUser && listing.status === "approved") { %>
+                <a href="/login" class="btn btn-primary" style="display: block; text-align: center; width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 600;">
+                  Log In to Reserve
+                </a>
                 <p style="text-align: center; color: #666; font-size: 0.85rem; margin: 10px 0 0 0;">
                   You won't be charged yet
+                </p>
+              <% } else if (listing.status === "approved" && !isOwner) { %>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 600;">
+                  Reserve Stay
+                </button>
+                <p style="text-align: center; color: #666; font-size: 0.85rem; margin: 10px 0 0 0;">
+                  Instant confirmation · No hidden fees
                 </p>
               <% } else if (isOwner) { %>
                 <button type="button" disabled class="btn btn-secondary" style="width: 100%; padding: 14px; opacity: 0.7; cursor: not-allowed;">
@@ -416,7 +423,6 @@
     const pricePerNight = <%= listing.price %>;
     const checkInInput = document.getElementById("checkIn");
     const checkOutInput = document.getElementById("checkOut");
-    const guestsInput = document.getElementById("bookingGuests");
     const breakdownEl = document.getElementById("booking-breakdown");
     const calcLabel = document.getElementById("price-calc-label");
     const calcSubtotal = document.getElementById("price-calc-subtotal");
@@ -481,18 +487,5 @@
 
     checkOutInput.addEventListener("change", updatePricing);
     updatePricing();
-
-    window.handleReserve = function() {
-      const start = checkInInput.value;
-      const end = checkOutInput.value;
-      const guests = guestsInput ? guestsInput.value : 1;
-      const startD = new Date(start);
-      const endD = new Date(end);
-      const nights = Math.max(1, Math.ceil(Math.abs(endD - startD) / (1000 * 60 * 60 * 24)));
-      const subtotal = pricePerNight * nights;
-      const total = subtotal + Math.round(subtotal * 0.05);
-
-      alert(`Reservation Request Details:\n\nProperty: <%= listing.title %>\nCheck-in: ${start}\nCheckout: ${end}\nNights: ${nights}\nGuests: ${guests}\nEstimated Total: ₹${total.toLocaleString()}\n\nNote: Payment and booking confirmation workflows will be connected in Phase 6!`);
-    };
   })();
 </script>

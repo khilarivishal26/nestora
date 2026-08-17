@@ -1,0 +1,96 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container" style="padding: 40px 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 28px;">
+    <div>
+      <h1 style="color: var(--forest-green); margin: 0 0 6px 0;">Host Reservations</h1>
+      <p style="color: #666; margin: 0;">View and manage guest bookings for your properties.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="/listings/my" class="btn btn-secondary">My Properties</a>
+      <a href="/listings/new" class="btn btn-primary">+ Add Property</a>
+    </div>
+  </div>
+
+  <% if (bookings.length === 0) { %>
+    <div class="card" style="text-align: center; padding: 56px 24px;">
+      <h2 style="color: var(--forest-green); margin-top: 0;">No incoming reservations yet</h2>
+      <p style="color: #666; max-width: 460px; margin: 8px auto 24px auto;">
+        When guests book your properties, their reservation details and payout breakdowns will appear here.
+      </p>
+      <a href="/listings/my" class="btn btn-primary">View My Properties</a>
+    </div>
+  <% } else { %>
+    <div class="card" style="padding: 24px; overflow-x: auto;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Guest</th>
+            <th>Check-in</th>
+            <th>Checkout</th>
+            <th>Guests & Nights</th>
+            <th>Payout</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% bookings.forEach(function(booking) { %>
+            <% const listing = booking.listing; %>
+            <tr>
+              <td>
+                <strong>
+                  <% if (listing) { %>
+                    <a href="/listings/<%= listing._id %>" style="color: var(--forest-green); text-decoration: none;">
+                      <%= listing.title %>
+                    </a>
+                  <% } else { %>
+                    Deleted Property
+                  <% } %>
+                </strong>
+                <% if (listing) { %>
+                  <div style="color: #666; font-size: 0.85rem;"><%= listing.location %></div>
+                <% } %>
+              </td>
+              <td>
+                <strong><%= booking.guest.username %></strong>
+                <div style="color: #666; font-size: 0.85rem;"><%= booking.guest.email %></div>
+              </td>
+              <td><%= booking.checkIn.toDateString() %></td>
+              <td><%= booking.checkOut.toDateString() %></td>
+              <td>
+                <%= booking.guests %> guest<%= booking.guests !== 1 ? 's' : '' %><br />
+                <span style="color: #666; font-size: 0.85rem;"><%= booking.nights %> night<%= booking.nights !== 1 ? 's' : '' %></span>
+              </td>
+              <td>
+                <strong style="color: var(--forest-green);">₹<%= (booking.nights * booking.pricePerNight).toLocaleString() %></strong>
+                <div style="color: #888; font-size: 0.8rem;">(₹<%= booking.pricePerNight %>/night)</div>
+              </td>
+              <td>
+                <span class="badge badge-booking-status badge-<%= booking.status %>">
+                  <%= booking.status.toUpperCase() %>
+                </span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <a href="/bookings/<%= booking._id %>" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.85rem;">
+                    View
+                  </a>
+                  <% if (booking.status !== "cancelled") { %>
+                    <form action="/bookings/<%= booking._id %>/cancel?_method=PUT" method="POST"
+                          onsubmit="return confirm('Cancel this guest booking?');">
+                      <button type="submit" class="btn btn-danger" style="padding: 4px 12px; font-size: 0.85rem;">
+                        Cancel
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>

@@ -91,6 +91,12 @@ const listingSchema = new mongoose.Schema(
         ref: "Review",
       },
     ],
+    bookings: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Booking",
+      },
+    ],
   },
   { timestamps: true }
 );

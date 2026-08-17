@@ -9,6 +9,7 @@
 
 const Listing = require("../models/Listing");
 const Review = require("../models/Review");
+const Booking = require("../models/Booking");
 const { cloudinary } = require("../config/cloudinary");
 
 // ---------------------------------------------------------------------------
@@ -378,10 +379,11 @@ module.exports.destroy = async (req, res, next) => {
       }
     }
 
-    // Clean up associated reviews in the database.
+    // Clean up associated reviews and bookings in the database.
     if (listing.reviews && listing.reviews.length > 0) {
       await Review.deleteMany({ _id: { $in: listing.reviews } });
     }
+    await Booking.deleteMany({ listing: listing._id });
 
     await Listing.findByIdAndDelete(listing._id);
 

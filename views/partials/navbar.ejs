@@ -9,9 +9,12 @@
           this always falls through to the logged-out links below. %>
       <% if (typeof currentUser !== "undefined" && currentUser) { %>
 
+        <li><a href="/bookings/my">My Bookings</a></li>
+
         <% if (currentUser.role === "host" || currentUser.role === "admin") { %>
           <li><a href="/listings/new">Add Property</a></li>
           <li><a href="/listings/my">My Properties</a></li>
+          <li><a href="/bookings/host">Reservations</a></li>
         <% } %>
 
         <% if (currentUser.role === "admin") { %>

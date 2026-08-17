@@ -8,6 +8,7 @@ const express = require("express");
 const router = express.Router();
 
 const listingController = require("../controllers/listingController");
+const bookingController = require("../controllers/bookingController");
 const { isLoggedIn, isHost } = require("../middleware/auth");
 const { isListingOwner } = require("../middleware/listing");
 const { upload } = require("../config/cloudinary");
@@ -38,6 +39,9 @@ router.post(
 
 // Show a single listing (public for approved; owner/admin for others).
 router.get("/:id", listingController.show);
+
+// Create a booking for a listing (logged-in guests only).
+router.post("/:id/bookings", isLoggedIn, bookingController.create);
 
 // Render the edit form (owner or admin only).
 router.get(
