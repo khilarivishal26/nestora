@@ -12,29 +12,26 @@
     <% } %>
   </div>
 
-  <%# ---------- Search & Filter Panel (Explore page only) ---------- %>
+  <%# ---------- Search & Filter Panel (public Explore page only) ---------- %>
   <% if (typeof isMyPage === "undefined" || !isMyPage) { %>
     <% const qv = typeof query !== "undefined" ? query : {}; %>
 
     <form action="/listings" method="GET" class="search-section card">
-      <%# --- Keyword search bar --- %>
+
+      <%# -- Search bar -- %>
       <div class="search-bar">
-        <input
-          type="text"
-          name="q"
-          placeholder="Search by location, title, or keyword..."
-          value="<%= qv.q || '' %>"
-          aria-label="Search properties"
-        />
+        <input type="text" name="q" placeholder="Search by location, title, or keyword..."
+               value="<%= qv.q || '' %>" />
         <button type="submit" class="btn btn-primary">Search</button>
       </div>
 
-      <%# --- Filter row --- %>
+      <%# -- Filter row -- %>
       <div class="filter-row">
+
         <div class="filter-group">
           <label for="propertyType">Property Type</label>
           <select name="propertyType" id="propertyType">
-            <option value="">All Types</option>
+            <option value="">All types</option>
             <% ["hotel", "villa", "resort", "cottage", "apartment", "homestay"].forEach(function(t) { %>
               <option value="<%= t %>" <%= qv.propertyType === t ? 'selected' : '' %>><%= t.charAt(0).toUpperCase() + t.slice(1) %></option>
             <% }) %>
@@ -43,12 +40,14 @@
 
         <div class="filter-group">
           <label for="minPrice">Min Price (₹)</label>
-          <input type="number" name="minPrice" id="minPrice" min="0" placeholder="0" value="<%= qv.minPrice || '' %>" />
+          <input type="number" name="minPrice" id="minPrice" min="0" step="100"
+                 placeholder="0" value="<%= qv.minPrice || '' %>" />
         </div>
 
         <div class="filter-group">
           <label for="maxPrice">Max Price (₹)</label>
-          <input type="number" name="maxPrice" id="maxPrice" min="0" placeholder="Any" value="<%= qv.maxPrice || '' %>" />
+          <input type="number" name="maxPrice" id="maxPrice" min="0" step="100"
+                 placeholder="Any" value="<%= qv.maxPrice || '' %>" />
         </div>
 
         <div class="filter-group">
@@ -73,12 +72,14 @@
 
         <div class="filter-group">
           <label for="country">Country</label>
-          <input type="text" name="country" id="country" placeholder="Any" value="<%= qv.country || '' %>" />
+          <input type="text" name="country" id="country"
+                 placeholder="e.g. India" value="<%= qv.country || '' %>" />
         </div>
 
         <div class="filter-group">
           <label for="amenities">Amenities</label>
-          <input type="text" name="amenities" id="amenities" placeholder="WiFi, Pool, AC..." value="<%= qv.amenities || '' %>" />
+          <input type="text" name="amenities" id="amenities"
+                 placeholder="e.g. WiFi, Pool" value="<%= qv.amenities || '' %>" />
         </div>
 
         <div class="filter-group">
@@ -89,32 +90,34 @@
             <option value="price_desc" <%= qv.sort === 'price_desc' ? 'selected' : '' %>>Price: High → Low</option>
           </select>
         </div>
+
       </div>
 
-      <%# --- Action buttons --- %>
+      <%# -- Action buttons -- %>
       <div class="filter-actions">
         <button type="submit" class="btn btn-primary">Apply Filters</button>
-        <a href="/listings" class="btn btn-secondary">Clear All</a>
+        <% if (typeof hasFilters !== "undefined" && hasFilters) { %>
+          <a href="/listings" class="btn btn-secondary">Clear All</a>
+        <% } %>
       </div>
     </form>
 
-    <%# --- Results count --- %>
-    <% if (typeof resultCount !== "undefined") { %>
-      <p class="results-count">
-        Showing <strong><%= resultCount %></strong> propert<%= resultCount === 1 ? 'y' : 'ies' %>
-        <% if (typeof hasActiveFilters !== "undefined" && hasActiveFilters) { %>
-          matching your filters
-        <% } %>
-      </p>
-    <% } %>
+    <%# -- Results count -- %>
+    <div class="results-count">
+      <% if (typeof hasFilters !== "undefined" && hasFilters) { %>
+        Showing <strong><%= listings.length %></strong> result<%= listings.length !== 1 ? 's' : '' %>
+      <% } else { %>
+        <strong><%= listings.length %></strong> propert<%= listings.length !== 1 ? 'ies' : 'y' %> available
+      <% } %>
+    </div>
   <% } %>
 
   <%# ---------- Listing grid ---------- %>
   <% if (listings.length === 0) { %>
     <div class="card" style="text-align: center; padding: 48px 24px;">
-      <% if (typeof hasActiveFilters !== "undefined" && hasActiveFilters) { %>
+      <% if (typeof hasFilters !== "undefined" && hasFilters) { %>
         <p style="font-size: 1.1rem; color: #666;">No properties match your search.</p>
-        <a href="/listings" class="btn btn-secondary" style="margin-top: 12px;">Clear filters & show all</a>
+        <a href="/listings" class="btn btn-secondary" style="margin-top: 12px;">Clear filters</a>
       <% } else if (typeof isMyPage !== "undefined" && isMyPage) { %>
         <p style="font-size: 1.1rem; color: #666;">No properties found.</p>
         <a href="/listings/new" class="btn btn-primary" style="margin-top: 12px;">List your first property</a>

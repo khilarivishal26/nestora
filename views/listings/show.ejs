@@ -1,16 +1,23 @@
 <% layout("layouts/boilerplate") %>
 
 <section class="container" style="padding: 40px 24px;">
-  <div class="listing-detail">
+  <div class="show-page">
 
-    <%# ---------- Image gallery ---------- %>
-    <div class="listing-images">
+    <%# ========== IMAGE GALLERY ========== %>
+    <div class="gallery">
       <% if (listing.images && listing.images.length > 0) { %>
-        <% listing.images.forEach(function(img, i) { %>
-          <div class="listing-image-item">
-            <img src="<%= img %>" alt="<%= listing.title %> — image <%= i + 1 %>" />
+        <div class="gallery-main">
+          <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" id="gallery-main-img" />
+        </div>
+        <% if (listing.images.length > 1) { %>
+          <div class="gallery-thumbs">
+            <% listing.images.forEach(function(img, i) { %>
+              <img src="<%= img %>" alt="<%= listing.title %> — Image <%= i + 1 %>"
+                   class="gallery-thumb <%= i === 0 ? 'active' : '' %>"
+                   onclick="document.getElementById('gallery-main-img').src=this.src; document.querySelectorAll('.gallery-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');" />
+            <% }) %>
           </div>
-        <% }) %>
+        <% } %>
       <% } else { %>
         <div class="listing-image-placeholder">
           <p>No images uploaded</p>
@@ -18,93 +25,474 @@
       <% } %>
     </div>
 
-    <%# ---------- Main info ---------- %>
-    <div class="listing-info card">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
-        <div>
-          <h1 style="color: var(--forest-green); margin: 0 0 4px 0;"><%= listing.title %></h1>
-          <p style="color: #666; margin: 0;"><%= listing.location %>, <%= listing.country %></p>
-        </div>
-        <div style="text-align: right;">
-          <span style="font-size: 1.5rem; font-weight: 700; color: var(--forest-green);">
-            ₹<%= listing.price.toLocaleString() %>
-          </span>
-          <span style="color: #666;"> / night</span>
-        </div>
-      </div>
+    <%# ========== MAIN CONTENT + BOOKING SIDEBAR ========== %>
+    <div class="show-content">
 
-      <%# Status badge (visible to owner/admin for non-approved) %>
-      <% if (listing.status !== "approved") { %>
-        <div style="margin-top: 12px;">
-          <span class="badge badge-status badge-<%= listing.status %>"><%= listing.status %></span>
-        </div>
-      <% } %>
+      <%# ---------- Left Column: Property Details ---------- %>
+      <div class="show-details">
 
-      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-
-      <div class="listing-meta">
-        <span class="badge badge-type"><%= listing.propertyType %></span>
-        <span>👥 <%= listing.maxGuests %> guest<%= listing.maxGuests !== 1 ? "s" : "" %></span>
-        <span>🛏️ <%= listing.bedrooms %> bedroom<%= listing.bedrooms !== 1 ? "s" : "" %></span>
-        <span>🛁 <%= listing.bathrooms %> bathroom<%= listing.bathrooms !== 1 ? "s" : "" %></span>
-      </div>
-
-      <h3 style="margin-top: 24px;">About this property</h3>
-      <p style="line-height: 1.7; white-space: pre-line;"><%= listing.description %></p>
-
-      <% if (listing.amenities && listing.amenities.length > 0) { %>
-        <h3>Amenities</h3>
-        <div class="amenities-list">
-          <% listing.amenities.forEach(function(amenity) { %>
-            <span class="badge badge-amenity"><%= amenity %></span>
-          <% }) %>
-        </div>
-      <% } %>
-
-      <% if (listing.category) { %>
-        <p style="margin-top: 16px; color: #666;"><strong>Category:</strong> <%= listing.category %></p>
-      <% } %>
-
-      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-
-      <p style="color: #666;">
-        Hosted by <strong><%= listing.owner.username %></strong>
-      </p>
-
-      <%# ---------- Admin approval actions ---------- %>
-      <% if (isAdmin && listing.status !== "approved") { %>
-        <div class="admin-review-actions">
-          <p style="margin: 0 0 12px 0; color: #666;">
-            <strong>Admin review:</strong> This property is not yet approved.
-          </p>
-          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <form action="/admin/listings/<%= listing._id %>/approve?_method=PUT" method="POST">
-              <button type="submit" class="btn btn-primary">Approve</button>
-            </form>
-            <form action="/admin/listings/<%= listing._id %>/reject?_method=PUT" method="POST"
-                  onsubmit="return confirm('Reject this property?');">
-              <button type="submit" class="btn btn-danger">Reject</button>
-            </form>
-            <a href="/admin" class="btn btn-secondary">Back to dashboard</a>
+        <%# -- Header -- %>
+        <div class="show-header">
+          <div>
+            <h1 style="color: var(--forest-green); margin: 0 0 6px 0; font-size: 2rem;"><%= listing.title %></h1>
+            <p style="color: #666; margin: 0; font-size: 1.05rem;">📍 <%= listing.location %>, <%= listing.country %></p>
+          </div>
+          <div style="text-align: right;">
+            <% if (reviewCount > 0) { %>
+              <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
+                <span style="font-size: 1.25rem; font-weight: 700; color: var(--forest-green);">
+                  ⭐ <%= avgRating %>
+                </span>
+                <span style="color: #666; font-size: 0.95rem;">
+                  (<%= reviewCount %> review<%= reviewCount !== 1 ? 's' : '' %>)
+                </span>
+              </div>
+            <% } else { %>
+              <span style="color: #888; font-size: 0.95rem;">⭐ New (No reviews yet)</span>
+            <% } %>
           </div>
         </div>
-      <% } %>
 
-      <%# ---------- Owner/Admin edit actions ---------- %>
-      <% if (isOwner || isAdmin) { %>
-        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
-          <a href="/listings/<%= listing._id %>/edit" class="btn btn-primary">Edit Property</a>
-          <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST" style="display: inline;"
-                onsubmit="return confirm('Are you sure you want to delete this property?');">
-            <button type="submit" class="btn btn-danger">Delete Property</button>
-          </form>
+        <%# Status badge (visible to owner/admin for non-approved) %>
+        <% if (listing.status !== "approved") { %>
+          <div style="margin-top: 14px;">
+            <span class="badge badge-status badge-<%= listing.status %>"><%= listing.status.toUpperCase() %></span>
+          </div>
+        <% } %>
+
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+
+        <%# -- Property Meta Badges -- %>
+        <div class="listing-meta">
+          <span class="badge badge-type" style="text-transform: capitalize;"><%= listing.propertyType %></span>
+          <span>👥 <%= listing.maxGuests %> guest<%= listing.maxGuests !== 1 ? "s" : "" %> max</span>
+          <span>🛏️ <%= listing.bedrooms %> bedroom<%= listing.bedrooms !== 1 ? "s" : "" %></span>
+          <span>🛁 <%= listing.bathrooms %> bathroom<%= listing.bathrooms !== 1 ? "s" : "" %></span>
+          <% if (listing.category) { %>
+            <span class="badge badge-amenity">🏷️ <%= listing.category %></span>
+          <% } %>
         </div>
-      <% } %>
+
+        <%# -- Host Information Card -- %>
+        <div class="host-info card" style="margin-top: 24px;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="host-avatar"><%= listing.owner.username.charAt(0).toUpperCase() %></div>
+            <div>
+              <p style="margin: 0; font-weight: 600; font-size: 1.05rem; color: var(--forest-green);">
+                Hosted by <%= listing.owner.username %>
+              </p>
+              <p style="margin: 3px 0 0 0; color: #666; font-size: 0.9rem;">
+                Member since <%= listing.owner.createdAt ? listing.owner.createdAt.toDateString() : 'Nestora Host' %>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <%# -- Description -- %>
+        <h3 style="margin-top: 32px; color: var(--forest-green);">About this stay</h3>
+        <p style="line-height: 1.8; color: #333; font-size: 1rem; white-space: pre-line;"><%= listing.description %></p>
+
+        <%# -- Amenities -- %>
+        <% if (listing.amenities && listing.amenities.length > 0) { %>
+          <h3 style="margin-top: 32px; color: var(--forest-green);">What this place offers</h3>
+          <div class="amenities-list">
+            <% listing.amenities.forEach(function(amenity) { %>
+              <span class="badge badge-amenity">✓ <%= amenity %></span>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <%# ========== MAPBOX MAP ========== %>
+        <h3 style="margin-top: 36px; color: var(--forest-green);">Where you'll be</h3>
+        <p style="color: #666; margin: 4px 0 16px 0;">📍 <%= listing.location %>, <%= listing.country %></p>
+
+        <% if (mapboxToken) { %>
+          <div id="map" class="show-map"></div>
+          <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+          <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+          <script>
+            (function() {
+              mapboxgl.accessToken = '<%= mapboxToken %>';
+              const hasCoords = <%= Boolean(listing.coordinates && listing.coordinates.lat && listing.coordinates.lng) %>;
+              const locationQuery = "<%= listing.location %>, <%= listing.country %>";
+
+              function initMap(lng, lat) {
+                const map = new mapboxgl.Map({
+                  container: 'map',
+                  style: 'mapbox://styles/mapbox/streets-v12',
+                  center: [lng, lat],
+                  zoom: 13,
+                });
+
+                new mapboxgl.Marker({ color: '#174a3a' })
+                  .setLngLat([lng, lat])
+                  .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+                    <div style="padding: 6px 4px; font-family: inherit;">
+                      <strong style="color: #174a3a; font-size: 0.95rem;"><%= listing.title %></strong>
+                      <div style="color: #666; font-size: 0.85rem; margin-top: 2px;">₹<%= listing.price.toLocaleString() %> / night</div>
+                    </div>
+                  `))
+                  .addTo(map);
+
+                map.addControl(new mapboxgl.NavigationControl());
+              }
+
+              if (hasCoords) {
+                initMap(<%= (listing.coordinates && listing.coordinates.lng) || 0 %>, <%= (listing.coordinates && listing.coordinates.lat) || 0 %>);
+              } else {
+                // Forward geocode with Mapbox Geocoding API if lat/lng not stored
+                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(locationQuery)}.json?access_token=<%= mapboxToken %>&limit=1`)
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data && data.features && data.features.length > 0) {
+                      const [lng, lat] = data.features[0].center;
+                      initMap(lng, lat);
+                    } else {
+                      document.getElementById('map').innerHTML = `
+                        <div class="card" style="padding: 24px; text-align: center; color: #666; height: 100%; display: flex; align-items: center; justify-content: center;">
+                          <p style="margin: 0;">📍 <%= listing.location %>, <%= listing.country %></p>
+                        </div>`;
+                    }
+                  })
+                  .catch(() => {
+                    document.getElementById('map').innerHTML = `
+                      <div class="card" style="padding: 24px; text-align: center; color: #666; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        <p style="margin: 0;">📍 <%= listing.location %>, <%= listing.country %></p>
+                      </div>`;
+                  });
+              }
+            })();
+          </script>
+        <% } else { %>
+          <div class="card" style="padding: 24px; text-align: center; color: #666;">
+            <p style="margin: 0; font-size: 1.05rem;">📍 <%= listing.location %>, <%= listing.country %></p>
+            <p style="margin: 6px 0 0 0; font-size: 0.85rem; color: #888;">Interactive map requires Mapbox configuration.</p>
+          </div>
+        <% } %>
+
+        <%# ========== ADMIN ACTIONS ========== %>
+        <% if (isAdmin && listing.status !== "approved") { %>
+          <div class="admin-review-actions" style="margin-top: 28px;">
+            <p style="margin: 0 0 12px 0; color: #666; font-size: 0.95rem;">
+              <strong>Admin Review:</strong> This property is currently <strong><%= listing.status %></strong>.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <form action="/admin/listings/<%= listing._id %>/approve?_method=PUT" method="POST">
+                <button type="submit" class="btn btn-primary">Approve Property</button>
+              </form>
+              <form action="/admin/listings/<%= listing._id %>/reject?_method=PUT" method="POST"
+                    onsubmit="return confirm('Reject this property?');">
+                <button type="submit" class="btn btn-danger">Reject Property</button>
+              </form>
+              <a href="/admin" class="btn btn-secondary">Admin Dashboard</a>
+            </div>
+          </div>
+        <% } %>
+
+        <%# ========== OWNER ACTIONS ========== %>
+        <% if (isOwner || isAdmin) { %>
+          <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+            <a href="/listings/<%= listing._id %>/edit" class="btn btn-primary">Edit Property</a>
+            <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST" style="display: inline;"
+                  onsubmit="return confirm('Are you sure you want to delete this property? This cannot be undone.');">
+              <button type="submit" class="btn btn-danger">Delete Property</button>
+            </form>
+          </div>
+        <% } %>
+
+        <%# ========== REVIEWS SECTION ========== %>
+        <div class="reviews-section" style="margin-top: 48px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <h2 style="color: var(--forest-green); margin: 0;">
+              <% if (reviewCount > 0) { %>
+                ⭐ <%= avgRating %> · <%= reviewCount %> Guest Review<%= reviewCount !== 1 ? 's' : '' %>
+              <% } else { %>
+                Guest Reviews
+              <% } %>
+            </h2>
+          </div>
+
+          <%# -- Review submission form (logged-in, non-owner, approved only) -- %>
+          <% if (typeof currentUser !== "undefined" && currentUser && !isOwner && listing.status === "approved") { %>
+            <div class="card review-form-card">
+              <h3 style="margin-top: 0; color: var(--forest-green);">Write a Review</h3>
+              <form action="/listings/<%= listing._id %>/reviews" method="POST">
+                <div class="form-group">
+                  <label for="rating">Rating <span class="required">*</span></label>
+                  <select name="rating" id="rating" required>
+                    <option value="">Select your rating…</option>
+                    <option value="5">⭐⭐⭐⭐⭐ 5 Stars — Exceptional</option>
+                    <option value="4">⭐⭐⭐⭐ 4 Stars — Very Good</option>
+                    <option value="3">⭐⭐⭐ 3 Stars — Average</option>
+                    <option value="2">⭐⭐ 2 Stars — Below Expectations</option>
+                    <option value="1">⭐ 1 Star — Poor</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="body">Your Experience <span class="required">*</span></label>
+                  <textarea name="body" id="body" rows="4" placeholder="How was your stay? Tell future guests about the place, host, and location…" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+              </form>
+            </div>
+          <% } else if (!currentUser && listing.status === "approved") { %>
+            <div class="card" style="padding: 20px; text-align: center; margin-bottom: 24px;">
+              <p style="margin: 0; color: #666;">
+                <a href="/login" style="color: var(--terracotta); font-weight: 600;">Log in</a> to write a review.
+              </p>
+            </div>
+          <% } else if (isOwner) { %>
+            <div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: #fdfaf6; border: 1px solid #ebd9c8;">
+              <p style="margin: 0; color: #886047; font-size: 0.95rem;">
+                ℹ️ You are the host of this property.
+              </p>
+            </div>
+          <% } %>
+
+          <%# -- Review list -- %>
+          <% if (listing.reviews && listing.reviews.length > 0) { %>
+            <div class="reviews-list">
+              <% listing.reviews.forEach(function(review) { %>
+                <div class="card review-card">
+                  <div class="review-header">
+                    <div>
+                      <strong style="color: var(--forest-green); font-size: 1rem;"><%= review.author.username %></strong>
+                      <span style="color: #888; font-size: 0.85rem; margin-left: 10px;">
+                        <%= review.createdAt ? review.createdAt.toDateString() : '' %>
+                      </span>
+                    </div>
+                    <span class="review-stars">
+                      <% for (let i = 0; i < review.rating; i++) { %>⭐<% } %>
+                    </span>
+                  </div>
+                  <p class="review-body"><%= review.body %></p>
+                  <% if (currentUser && (review.author._id.equals(currentUser._id) || currentUser.role === "admin")) { %>
+                    <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
+                          method="POST" style="margin-top: 10px;"
+                          onsubmit="return confirm('Delete this review?');">
+                      <button type="submit" class="btn btn-danger" style="padding: 4px 12px; font-size: 0.8rem;">
+                        Delete
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="card" style="padding: 32px 24px; text-align: center;">
+              <p style="color: #666; margin: 0; font-size: 1rem;">No reviews yet. Be the first to share your experience!</p>
+            </div>
+          <% } %>
+        </div>
+
+      </div>
+
+      <%# ---------- Right Column: Booking Widget Sidebar ---------- %>
+      <div class="show-sidebar">
+        <div class="card booking-card">
+
+          <%# Price Header %>
+          <div class="booking-price-header">
+            <div>
+              <span class="booking-price-amount">₹<%= listing.price.toLocaleString() %></span>
+              <span class="booking-price-period">/ night</span>
+            </div>
+            <% if (reviewCount > 0) { %>
+              <div style="font-size: 0.95rem; font-weight: 600; color: var(--forest-green);">
+                ⭐ <%= avgRating %> <span style="font-weight: normal; color: #666;">(<%= reviewCount %>)</span>
+              </div>
+            <% } %>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+
+          <%# Booking Form & Calculations %>
+          <form id="booking-form" onsubmit="event.preventDefault(); handleReserve();">
+
+            <%# Dates Inputs %>
+            <div class="booking-date-inputs">
+              <div class="booking-date-field">
+                <label for="checkIn">CHECK-IN</label>
+                <input type="date" id="checkIn" name="checkIn" required />
+              </div>
+              <div class="booking-date-field">
+                <label for="checkOut">CHECKOUT</label>
+                <input type="date" id="checkOut" name="checkOut" required />
+              </div>
+            </div>
+
+            <%# Guests Input %>
+            <div class="booking-guest-field" style="margin-top: 12px;">
+              <label for="bookingGuests">GUESTS</label>
+              <select id="bookingGuests" name="guests">
+                <% for (let i = 1; i <= listing.maxGuests; i++) { %>
+                  <option value="<%= i %>"><%= i %> guest<%= i !== 1 ? 's' : '' %></option>
+                <% } %>
+              </select>
+            </div>
+
+            <%# Dynamic Price Calculation Summary %>
+            <div id="booking-breakdown" class="booking-breakdown" style="display: none; margin-top: 20px;">
+              <div class="booking-breakdown-row">
+                <span id="price-calc-label">₹<%= listing.price %> × 1 night</span>
+                <span id="price-calc-subtotal">₹<%= listing.price %></span>
+              </div>
+              <div class="booking-breakdown-row">
+                <span>Nestora service fee (5%)</span>
+                <span id="price-calc-fee">₹0</span>
+              </div>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 12px 0;" />
+              <div class="booking-breakdown-row total">
+                <strong>Total before taxes</strong>
+                <strong id="price-calc-total" style="color: var(--forest-green); font-size: 1.15rem;">₹0</strong>
+              </div>
+            </div>
+
+            <%# Reserve Button %>
+            <div style="margin-top: 20px;">
+              <% if (listing.status === "approved" && !isOwner) { %>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 600;">
+                  Reserve
+                </button>
+                <p style="text-align: center; color: #666; font-size: 0.85rem; margin: 10px 0 0 0;">
+                  You won't be charged yet
+                </p>
+              <% } else if (isOwner) { %>
+                <button type="button" disabled class="btn btn-secondary" style="width: 100%; padding: 14px; opacity: 0.7; cursor: not-allowed;">
+                  Your Property
+                </button>
+                <p style="text-align: center; color: #666; font-size: 0.85rem; margin: 8px 0 0 0;">
+                  Hosts cannot reserve their own property
+                </p>
+              <% } else { %>
+                <button type="button" disabled class="btn btn-secondary" style="width: 100%; padding: 14px; opacity: 0.7; cursor: not-allowed;">
+                  Not Available
+                </button>
+                <p style="text-align: center; color: #888; font-size: 0.85rem; margin: 8px 0 0 0;">
+                  Awaiting approval before booking
+                </p>
+              <% } %>
+            </div>
+          </form>
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+
+          <%# Stay Highlights %>
+          <div class="booking-info-list">
+            <div class="booking-info-row">
+              <span>👥 Max Capacity</span>
+              <strong><%= listing.maxGuests %> guests</strong>
+            </div>
+            <div class="booking-info-row">
+              <span>🛏️ Bedrooms</span>
+              <strong><%= listing.bedrooms %></strong>
+            </div>
+            <div class="booking-info-row">
+              <span>🛁 Bathrooms</span>
+              <strong><%= listing.bathrooms %></strong>
+            </div>
+            <div class="booking-info-row">
+              <span>🏠 Property Type</span>
+              <strong style="text-transform: capitalize;"><%= listing.propertyType %></strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
-  </div>
+    <%# Back to listings link %>
+    <a href="/listings" style="display: inline-block; margin-top: 36px; color: var(--terracotta); font-weight: 600; font-size: 1rem;">
+      ← Back to all stays
+    </a>
 
-  <a href="/listings" style="display: inline-block; margin-top: 24px; color: var(--terracotta); font-weight: 600;">
-    ← Back to all listings
-  </a>
+  </div>
 </section>
+
+<%# ========== CLIENT SCRIPTS FOR DATES & CALCULATION ========== %>
+<script>
+  (function() {
+    const pricePerNight = <%= listing.price %>;
+    const checkInInput = document.getElementById("checkIn");
+    const checkOutInput = document.getElementById("checkOut");
+    const guestsInput = document.getElementById("bookingGuests");
+    const breakdownEl = document.getElementById("booking-breakdown");
+    const calcLabel = document.getElementById("price-calc-label");
+    const calcSubtotal = document.getElementById("price-calc-subtotal");
+    const calcFee = document.getElementById("price-calc-fee");
+    const calcTotal = document.getElementById("price-calc-total");
+
+    if (!checkInInput || !checkOutInput) return;
+
+    // Set default dates: check-in = tomorrow, check-out = 3 days later
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const checkOutDate = new Date(tomorrow);
+    checkOutDate.setDate(tomorrow.getDate() + 2);
+
+    const formatDate = (d) => d.toISOString().split("T")[0];
+
+    checkInInput.min = formatDate(today);
+    checkInInput.value = formatDate(tomorrow);
+
+    checkOutInput.min = formatDate(tomorrow);
+    checkOutInput.value = formatDate(checkOutDate);
+
+    function updatePricing() {
+      const start = new Date(checkInInput.value);
+      const end = new Date(checkOutInput.value);
+
+      if (start && end && end > start) {
+        const diffTime = Math.abs(end - start);
+        const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (nights > 0) {
+          const subtotal = pricePerNight * nights;
+          const fee = Math.round(subtotal * 0.05);
+          const total = subtotal + fee;
+
+          calcLabel.textContent = `₹${pricePerNight.toLocaleString()} × ${nights} night${nights > 1 ? 's' : ''}`;
+          calcSubtotal.textContent = `₹${subtotal.toLocaleString()}`;
+          calcFee.textContent = `₹${fee.toLocaleString()}`;
+          calcTotal.textContent = `₹${total.toLocaleString()}`;
+          breakdownEl.style.display = "block";
+        } else {
+          breakdownEl.style.display = "none";
+        }
+      } else {
+        breakdownEl.style.display = "none";
+      }
+    }
+
+    checkInInput.addEventListener("change", function() {
+      const start = new Date(this.value);
+      const nextDay = new Date(start);
+      nextDay.setDate(start.getDate() + 1);
+      checkOutInput.min = formatDate(nextDay);
+
+      if (new Date(checkOutInput.value) <= start) {
+        checkOutInput.value = formatDate(nextDay);
+      }
+      updatePricing();
+    });
+
+    checkOutInput.addEventListener("change", updatePricing);
+    updatePricing();
+
+    window.handleReserve = function() {
+      const start = checkInInput.value;
+      const end = checkOutInput.value;
+      const guests = guestsInput ? guestsInput.value : 1;
+      const startD = new Date(start);
+      const endD = new Date(end);
+      const nights = Math.max(1, Math.ceil(Math.abs(endD - startD) / (1000 * 60 * 60 * 24)));
+      const subtotal = pricePerNight * nights;
+      const total = subtotal + Math.round(subtotal * 0.05);
+
+      alert(`Reservation Request Details:\n\nProperty: <%= listing.title %>\nCheck-in: ${start}\nCheckout: ${end}\nNights: ${nights}\nGuests: ${guests}\nEstimated Total: ₹${total.toLocaleString()}\n\nNote: Payment and booking confirmation workflows will be connected in Phase 6!`);
+    };
+  })();
+</script>

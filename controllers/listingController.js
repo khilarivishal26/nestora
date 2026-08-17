@@ -8,27 +8,17 @@
 // visible to their owner and to admins.
 
 const Listing = require("../models/Listing");
+const Review = require("../models/Review");
 const { cloudinary } = require("../config/cloudinary");
 
 // ---------------------------------------------------------------------------
 // GET /listings — Public listing index with search & filters (approved only)
-//
-// Supported query params (all optional):
-//   q            — keyword search across title, description, location, country
-//   propertyType — exact match from the enum
-//   minPrice     — price >= value
-//   maxPrice     — price <= value
-//   guests       — maxGuests >= value  (properties that fit this many guests)
-//   bedrooms     — bedrooms >= value
-//   amenities    — comma-separated list, matches listings containing ALL
-//   country      — case-insensitive partial match
-//   sort         — price_asc | price_desc | newest (default)
 // ---------------------------------------------------------------------------
 module.exports.index = async (req, res, next) => {
   try {
     const {
-      q, propertyType, minPrice, maxPrice,
-      guests, bedrooms, amenities, country, sort,
+      q, propertyType, minPrice, maxPrice, guests,
+      bedrooms, country, amenities, sort,
     } = req.query;
 
     // Always start with approved-only.
@@ -36,8 +26,7 @@ module.exports.index = async (req, res, next) => {
 
     // --- Keyword search (title, description, location, country) ---
     if (q && q.trim()) {
-      const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(escaped, "i");
+      const regex = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       filter.$or = [
         { title: regex },
         { description: regex },
@@ -46,49 +35,45 @@ module.exports.index = async (req, res, next) => {
       ];
     }
 
-    // --- Property type (exact match from enum) ---
+    // --- Property type filter ---
     if (propertyType && propertyType.trim()) {
       filter.propertyType = propertyType.trim();
     }
 
     // --- Price range ---
-    if (minPrice && !isNaN(minPrice) && Number(minPrice) >= 0) {
+    if (minPrice && !isNaN(Number(minPrice)) && Number(minPrice) >= 0) {
       filter.price = { ...filter.price, $gte: Number(minPrice) };
     }
-    if (maxPrice && !isNaN(maxPrice) && Number(maxPrice) >= 0) {
+    if (maxPrice && !isNaN(Number(maxPrice)) && Number(maxPrice) >= 0) {
       filter.price = { ...filter.price, $lte: Number(maxPrice) };
     }
 
-    // --- Minimum guests the property can accommodate ---
-    if (guests && !isNaN(guests) && Number(guests) >= 1) {
+    // --- Minimum guests ---
+    if (guests && !isNaN(Number(guests)) && Number(guests) >= 1) {
       filter.maxGuests = { $gte: Number(guests) };
     }
 
     // --- Minimum bedrooms ---
-    if (bedrooms && !isNaN(bedrooms) && Number(bedrooms) >= 1) {
+    if (bedrooms && !isNaN(Number(bedrooms)) && Number(bedrooms) >= 1) {
       filter.bedrooms = { $gte: Number(bedrooms) };
     }
 
-    // --- Amenities (must have ALL requested amenities) ---
-    if (amenities && amenities.trim()) {
-      const amenityList = amenities
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean);
-      if (amenityList.length > 0) {
-        // $all = listing must contain every requested amenity (case-insensitive).
-        filter.amenities = {
-          $all: amenityList.map((a) => new RegExp(`^${a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")),
-        };
-      }
+    // --- Country filter ---
+    if (country && country.trim()) {
+      filter.country = new RegExp(
+        country.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"
+      );
     }
 
-    // --- Country (case-insensitive partial match) ---
-    if (country && country.trim()) {
-      const escaped = country.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      // If keyword search already set $or, country filter here is an extra
-      // exact-field filter (not inside $or) — both conditions must match.
-      filter.country = new RegExp(escaped, "i");
+    // --- Amenities (comma-separated or repeated param) ---
+    if (amenities) {
+      const amenityList = Array.isArray(amenities)
+        ? amenities.map((a) => a.trim()).filter(Boolean)
+        : amenities.split(",").map((a) => a.trim()).filter(Boolean);
+      if (amenityList.length > 0) {
+        // $all = listing must have every requested amenity.
+        filter.amenities = { $all: amenityList.map((a) => new RegExp(a, "i")) };
+      }
     }
 
     // --- Sort ---
@@ -98,18 +83,17 @@ module.exports.index = async (req, res, next) => {
 
     const listings = await Listing.find(filter).sort(sortOption);
 
-    // Check whether any filters are active (for the "no results" UX).
-    const hasActiveFilters = !!(
+    // Check if any filters are active (used by the view to show "clear" link).
+    const hasFilters = !!(
       q || propertyType || minPrice || maxPrice ||
-      guests || bedrooms || amenities || country || sort
+      guests || bedrooms || country || amenities || sort
     );
 
     res.render("listings/index", {
       title: "Explore",
       listings,
-      query: req.query,       // so the form can repopulate active filters
-      hasActiveFilters,
-      resultCount: listings.length,
+      query: req.query,  // pass back for form repopulation
+      hasFilters,
     });
   } catch (err) {
     next(err);
@@ -225,7 +209,12 @@ module.exports.create = async (req, res, next) => {
 module.exports.show = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id)
-      .populate("owner", "username");
+      .populate("owner", "username email createdAt")
+      .populate({
+        path: "reviews",
+        populate: { path: "author", select: "username" },
+        options: { sort: { createdAt: -1 } },
+      });
 
     if (!listing) {
       req.flash("error", "Listing not found.");
@@ -242,11 +231,20 @@ module.exports.show = async (req, res, next) => {
       return res.redirect("/listings");
     }
 
+    // Compute average rating from populated reviews.
+    let avgRating = 0;
+    if (listing.reviews && listing.reviews.length > 0) {
+      const total = listing.reviews.reduce((sum, r) => sum + r.rating, 0);
+      avgRating = (total / listing.reviews.length).toFixed(1);
+    }
+
     res.render("listings/show", {
       title: listing.title,
       listing,
       isOwner,
       isAdmin,
+      avgRating: Number(avgRating),
+      reviewCount: listing.reviews ? listing.reviews.length : 0,
     });
   } catch (err) {
     next(err);
@@ -378,6 +376,11 @@ module.exports.destroy = async (req, res, next) => {
       } catch (e) {
         console.error("Cloudinary delete failed (non-fatal):", e.message);
       }
+    }
+
+    // Clean up associated reviews in the database.
+    if (listing.reviews && listing.reviews.length > 0) {
+      await Review.deleteMany({ _id: { $in: listing.reviews } });
     }
 
     await Listing.findByIdAndDelete(listing._id);
