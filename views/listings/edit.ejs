@@ -77,6 +77,25 @@
         <input type="text" id="amenities" name="amenities" value="<%= listing.amenities.join(', ') %>" />
       </div>
 
+      <%# ---------- Map Coordinates (optional) ---------- %>
+      <div class="form-row">
+        <div class="form-group" style="flex: 1;">
+          <label for="latitude">Latitude <small>(optional)</small></label>
+          <input type="number" id="latitude" name="latitude" step="any" min="-90" max="90"
+                 value="<%= (listing.coordinates && listing.coordinates.lat) || '' %>"
+                 placeholder="e.g. 32.2396" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="longitude">Longitude <small>(optional)</small></label>
+          <input type="number" id="longitude" name="longitude" step="any" min="-180" max="180"
+                 value="<%= (listing.coordinates && listing.coordinates.lng) || '' %>"
+                 placeholder="e.g. 77.1887" />
+        </div>
+      </div>
+      <p style="color: #888; font-size: 0.82rem; margin: -8px 0 12px 0;">
+        Providing coordinates shows an accurate map pin. If left blank, the map will use your location name.
+      </p>
+
       <%# ---------- Existing images ---------- %>
       <% if (listing.images && listing.images.length > 0) { %>
         <div class="form-group">

@@ -83,7 +83,10 @@ app.use(
           "https://*.razorpay.com",
           "https://api.mapbox.com",
           "https://events.mapbox.com",
+          "https://*.tiles.mapbox.com",
         ],
+        workerSrc: ["'self'", "blob:"],
+        childSrc: ["'self'", "blob:"],
         frameSrc: [
           "'self'",
           "https://api.razorpay.com",

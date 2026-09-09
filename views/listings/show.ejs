@@ -54,11 +54,10 @@
 
             <%# Wishlist Action Button %>
             <button type="button"
-                    class="btn-wishlist-detail <%= isFav ? 'active' : '' %>"
+                    class="btn-wishlist-detail wishlist-toggle-btn <%= isFav ? 'active' : '' %>"
                     data-listing-id="<%= listing._id %>"
                     aria-label="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
-                    title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
-                    onclick="toggleWishlist(event, '<%= listing._id %>')">
+                    title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>">
               <span class="wishlist-icon">♥</span>
               <span class="wishlist-label"><%= isFav ? 'Saved in Wishlist' : 'Save to Wishlist' %></span>
             </button>

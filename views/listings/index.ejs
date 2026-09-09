@@ -139,11 +139,10 @@
 
             <%# Favorite heart button toggle %>
             <button type="button"
-                    class="property-card-favorite-btn <%= isFav ? 'active' : '' %>"
+                    class="property-card-favorite-btn wishlist-toggle-btn <%= isFav ? 'active' : '' %>"
                     data-listing-id="<%= listing._id %>"
                     aria-label="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
-                    title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>"
-                    onclick="toggleWishlist(event, '<%= listing._id %>')">
+                    title="<%= isFav ? 'Remove from wishlist' : 'Save to wishlist' %>">
               ♥
             </button>
 

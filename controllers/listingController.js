@@ -193,6 +193,13 @@ module.exports.create = async (req, res, next) => {
       // status defaults to "pending" (defined in Listing schema)
     });
 
+    // Save optional coordinates if provided and valid
+    const lat = parseFloat(req.body.latitude);
+    const lng = parseFloat(req.body.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+      newListing.coordinates = { lat, lng };
+    }
+
     await newListing.save();
 
     req.flash(
@@ -326,6 +333,16 @@ module.exports.update = async (req, res, next) => {
     listing.bedrooms = bedrooms;
     listing.bathrooms = bathrooms;
     listing.amenities = amenitiesList;
+
+    // Update optional coordinates if provided and valid
+    const lat = parseFloat(req.body.latitude);
+    const lng = parseFloat(req.body.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+      listing.coordinates = { lat, lng };
+    } else if (req.body.latitude === '' && req.body.longitude === '') {
+      // Allow clearing coordinates when both fields are explicitly emptied
+      listing.coordinates = { lat: undefined, lng: undefined };
+    }
 
     // Append any newly uploaded images.
     if (req.files && req.files.length > 0) {

@@ -49,11 +49,10 @@
 
             <%# Heart Remove / Toggle Button %>
             <button type="button"
-                    class="property-card-favorite-btn active"
+                    class="property-card-favorite-btn wishlist-toggle-btn active"
                     data-listing-id="<%= listing._id %>"
                     aria-label="Remove from wishlist"
-                    title="Remove from wishlist"
-                    onclick="toggleWishlist(event, '<%= listing._id %>')">
+                    title="Remove from wishlist">
               ♥
             </button>
 
@@ -93,9 +92,9 @@
                   View Stay
                 </a>
                 <button type="button"
-                        class="btn btn-secondary"
-                        style="padding: 8px 12px; font-size: 0.88rem; color: #c53030;"
-                        onclick="toggleWishlist(event, '<%= listing._id %>')">
+                        class="btn btn-secondary wishlist-toggle-btn"
+                        data-listing-id="<%= listing._id %>"
+                        style="padding: 8px 12px; font-size: 0.88rem; color: #c53030;">
                   Remove
                 </button>
               </div>
