@@ -15,7 +15,13 @@ const User = require("../models/User");
 const Listing = require("../models/Listing");
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
-const connectDB = require("../utils/db");
+
+const TEST_DB_URI = process.env.MONGODB_URI_TEST || "mongodb://127.0.0.1:27017/nestora_test_rzp";
+
+if (TEST_DB_URI.includes("production") || TEST_DB_URI.includes("atlas") || !TEST_DB_URI.includes("test")) {
+  console.error("❌ SAFETY VIOLATION: Test suite must only be executed against a dedicated test database.");
+  process.exit(1);
+}
 
 const RZP_TEST_PREFIX = "rzptest_";
 
@@ -29,10 +35,15 @@ function assert(condition, message) {
 }
 
 async function cleanup() {
-  await Payment.deleteMany({});
-  await Booking.deleteMany({});
-  await Listing.deleteMany({ title: { $regex: `^${RZP_TEST_PREFIX}` } });
-  await User.deleteMany({ username: { $regex: `^${RZP_TEST_PREFIX}` } });
+  const testUsers = await User.find({ username: { $regex: `^${RZP_TEST_PREFIX}` } }).select("_id");
+  const testUserIds = testUsers.map((u) => u._id);
+  const testListings = await Listing.find({ title: { $regex: `^${RZP_TEST_PREFIX}` } }).select("_id");
+  const testListingIds = testListings.map((l) => l._id);
+
+  await Payment.deleteMany({ $or: [{ guest: { $in: testUserIds } }, { listing: { $in: testListingIds } }] });
+  await Booking.deleteMany({ $or: [{ guest: { $in: testUserIds } }, { listing: { $in: testListingIds } }] });
+  await Listing.deleteMany({ _id: { $in: testListingIds } });
+  await User.deleteMany({ _id: { $in: testUserIds } });
 }
 
 async function createUser(username, role) {
@@ -57,10 +68,11 @@ async function runRazorpayTests() {
   console.log("--- NESTORA: RAZORPAY PAYMENT GATEWAY INTEGRATION TESTS ---");
   console.log("=======================================================");
 
-  await connectDB();
+  process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "test_rzp_secret_key_123456";
+  await mongoose.connect(TEST_DB_URI);
   await cleanup();
 
-  const secretKey = process.env.RAZORPAY_KEY_SECRET || "rzp_test_nestoraSecretKey123456";
+  const secretKey = process.env.RAZORPAY_KEY_SECRET;
 
   // Create Users
   const host = await createUser("host", "host");

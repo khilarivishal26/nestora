@@ -58,11 +58,25 @@ const paymentSchema = new mongoose.Schema(
     razorpaySignature: {
       type: String,
     },
+    razorpayRefundId: {
+      type: String,
+    },
+    refundAmount: {
+      type: Number,
+      default: 0,
+    },
     receiptUrl: {
       type: String,
     },
   },
   { timestamps: true }
 );
+
+// High-integrity unique & performance indexes for transaction audit records
+paymentSchema.index({ booking: 1 }, { unique: true });
+paymentSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
+paymentSchema.index({ razorpayOrderId: 1 });
+paymentSchema.index({ guest: 1, createdAt: -1 });
+paymentSchema.index({ listing: 1, status: 1 });
 
 module.exports = mongoose.model("Payment", paymentSchema);

@@ -103,6 +103,7 @@
 
         <%# Hidden form submitted automatically upon Razorpay payment success %>
         <form id="rzp-verify-form" action="/bookings/<%= booking._id %>/verify" method="POST" style="display: none;">
+          <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
           <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id" />
           <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="<%= orderId %>" />
           <input type="hidden" name="razorpay_signature" id="razorpay_signature" />
@@ -160,13 +161,7 @@
       });
       rzp.open();
     } else {
-      // Fallback sandbox test submission if CDN is unavailable in local offline environment
-      var mockPayId = "pay_test_" + Date.now();
-      var mockSig = "test_signature_sandbox_" + Date.now();
-      document.getElementById("razorpay_payment_id").value = mockPayId;
-      document.getElementById("razorpay_order_id").value = "<%= orderId %>";
-      document.getElementById("razorpay_signature").value = mockSig;
-      document.getElementById("rzp-verify-form").submit();
+      alert("Unable to load Razorpay checkout. Please check your internet connection and refresh the page.");
     }
   };
 </script>

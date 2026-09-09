@@ -7,6 +7,7 @@ const router = express.Router();
 const bookingController = require("../controllers/bookingController");
 const paymentController = require("../controllers/paymentController");
 const { isLoggedIn, isHost } = require("../middleware/auth");
+const { paymentLimiter } = require("../middleware/rateLimiter");
 
 // Guest view of their own reservations
 router.get("/my", isLoggedIn, bookingController.myBookings);
@@ -16,10 +17,9 @@ router.get("/host", isLoggedIn, isHost, bookingController.hostBookings);
 
 // Razorpay Payment & Checkout routes
 router.get("/:id/payment", isLoggedIn, paymentController.showPaymentPage);
-router.post("/:id/verify", isLoggedIn, paymentController.verifyPayment);
-router.post("/:id/payment/verify", isLoggedIn, paymentController.verifyPayment);
-router.post("/:id/failed", isLoggedIn, paymentController.handlePaymentFailure);
-router.get("/:id/payment/cancel", isLoggedIn, paymentController.handlePaymentFailure);
+router.post("/:id/verify", isLoggedIn, paymentLimiter, paymentController.verifyPayment);
+router.post("/:id/payment/verify", isLoggedIn, paymentLimiter, paymentController.verifyPayment);
+router.post("/:id/failed", isLoggedIn, paymentLimiter, paymentController.handlePaymentFailure);
 
 // Show single booking confirmation details
 router.get("/:id", isLoggedIn, bookingController.show);

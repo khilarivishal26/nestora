@@ -8,6 +8,7 @@ const adminController = require("../controllers/adminController");
 const { isLoggedIn, isAdmin } = require("../middleware/auth");
 
 router.get("/", isLoggedIn, isAdmin, adminController.dashboard);
+router.get("/audit-logs", isLoggedIn, isAdmin, adminController.viewAuditLogs);
 router.put("/listings/:id/approve", isLoggedIn, isAdmin, adminController.approve);
 router.put("/listings/:id/reject", isLoggedIn, isAdmin, adminController.reject);
 

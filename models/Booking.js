@@ -61,13 +61,15 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled", "completed"],
+      enum: ["pending", "confirmed", "cancelled", "completed", "expired"],
       default: "pending",
+      index: true,
     },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],
       default: "pending",
+      index: true,
     },
     paymentMethod: {
       type: String,
@@ -85,8 +87,59 @@ const bookingSchema = new mongoose.Schema(
     paidAt: {
       type: Date,
     },
+    cancellationPolicy: {
+      type: String,
+      enum: ["flexible", "moderate", "strict"],
+      default: "flexible",
+    },
+    refundStatus: {
+      type: String,
+      enum: ["none", "pending", "completed", "failed", "ineligible"],
+      default: "none",
+      index: true,
+    },
+    refundAmount: {
+      type: Number,
+      default: 0,
+      min: [0, "Refund amount cannot be negative."],
+    },
+    refundReason: {
+      type: String,
+      default: "",
+    },
+    razorpayRefundId: {
+      type: String,
+    },
+    refundedAt: {
+      type: Date,
+    },
+    cancelledAt: {
+      type: Date,
+    },
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 15 * 60 * 1000), // 15-minute booking hold
+      index: true,
+    },
   },
   { timestamps: true }
 );
+
+// Optimized compound indexes for fast availability checks and overlap prevention
+bookingSchema.index({ listing: 1, status: 1, checkIn: 1, checkOut: 1 });
+bookingSchema.index({ listing: 1, paymentStatus: 1, expiresAt: 1 });
+bookingSchema.index({ guest: 1, createdAt: -1 });
+
+bookingSchema.methods.isExpired = function () {
+  if (this.status === "expired") return true;
+  if (this.status === "pending" && this.expiresAt && this.expiresAt <= new Date()) {
+    return true;
+  }
+  return false;
+};
 
 module.exports = mongoose.model("Booking", bookingSchema);

@@ -22,5 +22,26 @@ const storage = new CloudinaryStorage({
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
   },
 });
-const upload = multer({ storage });
+const ALLOWED_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB maximum file size per image
+    files: 5,                  // Maximum 5 images per upload
+  },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_IMAGE_MIMES.includes(file.mimetype.toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid image format. Only JPG, JPEG, PNG, and WebP images are allowed."));
+    }
+  },
+});
+
 module.exports = { cloudinary, upload };

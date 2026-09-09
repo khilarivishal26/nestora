@@ -4,7 +4,7 @@
 
 module.exports.isLoggedIn = (req, res, next) => {
   if (!req.isAuthenticated()) {
-    if (req.xhr || req.headers.accept?.includes("json") || req.path?.includes("/toggle")) {
+    if (req.xhr || req.headers?.accept?.includes("json") || req.path?.includes("/toggle")) {
       return res.status(401).json({
         success: false,
         authenticated: false,

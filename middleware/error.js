@@ -33,7 +33,14 @@ module.exports.errorHandler = (err, req, res, next) => {
     message = `That ${field} is already in use.`;
   }
 
-  console.error(err);
+  const { captureException } = require("../utils/errorMonitoring");
+  const errorReport = captureException(err, req);
+
+  if (process.env.NODE_ENV !== "test") {
+    console.error(
+      `[ERROR] ${req.method} ${req.originalUrl || req.url} -> Status ${statusCode}: ${err.message} (Request ID: ${req.requestId || "unknown"})`
+    );
+  }
 
   res.status(statusCode).render("error", {
     title: "Error",

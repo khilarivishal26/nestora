@@ -5,6 +5,7 @@
     <h1 style="color: var(--forest-green); margin-top: 0; text-align: center;">Welcome back</h1>
 
     <form action="/login" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
       <div style="margin-bottom: 16px;">
         <label for="username" style="display: block; font-weight: 600; margin-bottom: 6px;">Username</label>
         <input
@@ -17,7 +18,10 @@
       </div>
 
       <div style="margin-bottom: 24px;">
-        <label for="password" style="display: block; font-weight: 600; margin-bottom: 6px;">Password</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label for="password" style="font-weight: 600; margin-bottom: 0;">Password</label>
+          <a href="/forgot-password" style="font-size: 0.85rem; color: var(--terracotta);">Forgot password?</a>
+        </div>
         <input
           type="password"
           id="password"

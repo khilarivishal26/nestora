@@ -1,12 +1,33 @@
-// Nestora booking controller — Phase 6: Booking & Availability.
-// Handles reservation creation, overlap checking, price calculation,
-// booking dashboards (guest & host), booking confirmation, and cancellations.
-
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Listing = require("../models/Listing");
+const User = require("../models/User");
+const Payment = require("../models/Payment");
+const DailyAvailability = require("../models/DailyAvailability");
+const { validateBookingInput } = require("../middleware/validators");
+const auditService = require("../services/auditService");
+const refundService = require("../services/refundService");
+const emailService = require("../services/emailService");
 
 // ---------------------------------------------------------------------------
-// POST /listings/:id/bookings — Create a new reservation
+// Helper: Extract contiguous YYYY-MM-DD date strings between checkIn and checkOut
+// ---------------------------------------------------------------------------
+function getBookingDateStrings(checkInDate, checkOutDate) {
+  const dates = [];
+  const cur = new Date(checkInDate);
+  const end = new Date(checkOutDate);
+  while (cur < end) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, "0");
+    const d = String(cur.getDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${d}`);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+// ---------------------------------------------------------------------------
+// POST /listings/:id/bookings — Create a new reservation with atomic inventory locking
 // ---------------------------------------------------------------------------
 module.exports.create = async (req, res, next) => {
   try {
@@ -29,46 +50,16 @@ module.exports.create = async (req, res, next) => {
       return res.redirect(`/listings/${listing._id}`);
     }
 
-    const { checkIn, checkOut, guests } = req.body;
-
-    if (!checkIn || !checkOut) {
-      req.flash("error", "Please provide both check-in and check-out dates.");
+    // 3. Centralized validation for dates and guests
+    const validation = validateBookingInput(req.body);
+    if (!validation.valid) {
+      req.flash("error", validation.error);
       return res.redirect(`/listings/${listing._id}`);
     }
 
-    // 3. Date parsing & normalization
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
+    const { checkInDate, checkOutDate, guests: numGuests, nights } = validation.data;
 
-    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
-      req.flash("error", "Invalid date format provided.");
-      return res.redirect(`/listings/${listing._id}`);
-    }
-
-    // Set time to 00:00:00.000 for fair day comparisons
-    checkInDate.setHours(0, 0, 0, 0);
-    checkOutDate.setHours(0, 0, 0, 0);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (checkInDate < today) {
-      req.flash("error", "Check-in date cannot be in the past.");
-      return res.redirect(`/listings/${listing._id}`);
-    }
-
-    if (checkOutDate <= checkInDate) {
-      req.flash("error", "Check-out date must be after check-in date.");
-      return res.redirect(`/listings/${listing._id}`);
-    }
-
-    // 4. Guest count validation
-    const numGuests = Number(guests);
-    if (!guests || isNaN(numGuests) || numGuests < 1) {
-      req.flash("error", "Number of guests must be at least 1.");
-      return res.redirect(`/listings/${listing._id}`);
-    }
-
+    // 4. Capacity limit validation against specific property
     if (numGuests > listing.maxGuests) {
       req.flash(
         "error",
@@ -77,11 +68,42 @@ module.exports.create = async (req, res, next) => {
       return res.redirect(`/listings/${listing._id}`);
     }
 
-    // 5. Overlap Check (Zero Double-Booking Guarantee)
-    // Overlap exists if: existing.checkIn < new.checkOut AND existing.checkOut > new.checkIn
+    const now = new Date();
+
+    // 5. Expire stale pending bookings (15 minutes) and purge non-active inventory holds
+    const staleBookings = await Booking.find({
+      listing: listing._id,
+      status: "pending",
+      paymentStatus: "pending",
+      expiresAt: { $lte: now },
+    }).select("_id");
+
+    if (staleBookings.length > 0) {
+      const staleIds = staleBookings.map((b) => b._id);
+      await Booking.updateMany({ _id: { $in: staleIds } }, { $set: { status: "expired" } });
+      await DailyAvailability.deleteMany({ booking: { $in: staleIds } });
+    }
+
+    const inactiveBookings = await Booking.find({
+      listing: listing._id,
+      status: { $in: ["cancelled", "expired"] },
+    }).select("_id");
+    if (inactiveBookings.length > 0) {
+      await DailyAvailability.deleteMany({ booking: { $in: inactiveBookings.map((b) => b._id) } });
+    }
+    await DailyAvailability.deleteMany({ listing: listing._id, status: "hold", expiresAt: { $lte: now } });
+
+    // 6. Overlap Check (Zero Double-Booking Guarantee)
     const conflictingBooking = await Booking.findOne({
       listing: listing._id,
-      status: { $in: ["confirmed", "pending"] },
+      $or: [
+        { status: "confirmed" },
+        {
+          status: "pending",
+          paymentStatus: "pending",
+          expiresAt: { $gt: now },
+        },
+      ],
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
@@ -89,26 +111,22 @@ module.exports.create = async (req, res, next) => {
     if (conflictingBooking) {
       req.flash(
         "error",
-        "The selected dates are already booked for this property. Please choose different dates."
+        "The selected dates are already booked or currently on hold for payment. Please choose different dates."
       );
       return res.redirect(`/listings/${listing._id}`);
     }
 
-    // 6. Calculate nights and total price strictly on the backend
-    const diffTime = Math.abs(checkOutDate - checkInDate);
-    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // 7. Generate date night strings
+    const datesToReserve = getBookingDateStrings(checkInDate, checkOutDate);
 
-    if (nights < 1) {
-      req.flash("error", "Reservation must be for at least 1 night.");
-      return res.redirect(`/listings/${listing._id}`);
-    }
-
+    // 8. Calculate total price strictly on the backend
     const pricePerNight = listing.price;
-    const totalPrice = nights * pricePerNight; // Guest pays only accommodation total
-    const platformCommission = Math.round(totalPrice * 0.05); // 5% Nestora commission from host
+    const totalPrice = nights * pricePerNight; // Guest pays accommodation total
+    const platformCommission = Math.round(totalPrice * 0.05); // 5% Nestora commission
     const hostEarnings = totalPrice - platformCommission; // Net host payout
+    const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15-minute hold
 
-    // 7. Create and persist booking
+    // 8. Instantiate Booking document
     const booking = new Booking({
       listing: listing._id,
       guest: req.user._id,
@@ -121,16 +139,38 @@ module.exports.create = async (req, res, next) => {
       platformCommission,
       hostEarnings,
       totalPrice,
+      cancellationPolicy: listing.cancellationPolicy || "flexible",
       status: "pending",
       paymentStatus: "pending",
+      expiresAt: holdExpiresAt,
     });
 
-    await booking.save();
+    // 9. Atomic Inventory Locking: Insert daily records with compound unique index
+    const inventoryDocs = datesToReserve.map((d) => ({
+      listing: listing._id,
+      date: d,
+      booking: booking._id,
+      status: "hold",
+      expiresAt: holdExpiresAt,
+    }));
 
+    try {
+      await DailyAvailability.insertMany(inventoryDocs, { ordered: true });
+    } catch (err) {
+      // Duplicate key collision (E11000) or race condition cleanly caught at DB level
+      req.flash(
+        "error",
+        "The selected dates are already booked or currently on hold for payment. Please choose different dates."
+      );
+      return res.redirect(`/listings/${listing._id}`);
+    }
+
+    // Inventory successfully secured atomically!
+    await booking.save();
     listing.bookings.push(booking._id);
     await listing.save();
 
-    req.flash("success", "Reservation initiated! Please complete payment to confirm your stay.");
+    req.flash("success", "Reservation initiated! Please complete payment within 15 minutes to confirm your stay.");
     res.redirect(`/bookings/${booking._id}/payment`);
   } catch (err) {
     next(err);
@@ -163,7 +203,6 @@ module.exports.myBookings = async (req, res, next) => {
 // ---------------------------------------------------------------------------
 module.exports.hostBookings = async (req, res, next) => {
   try {
-    // Find all listings owned by the host
     const myListings = await Listing.find({ owner: req.user._id }).select("_id");
     const listingIds = myListings.map((l) => l._id);
 
@@ -198,7 +237,6 @@ module.exports.show = async (req, res, next) => {
       return res.redirect("/bookings/my");
     }
 
-    // Access control: Guest, Host of property, or Admin
     const isGuest = booking.guest._id.equals(req.user._id);
     const isHost =
       booking.listing &&
@@ -209,6 +247,13 @@ module.exports.show = async (req, res, next) => {
     if (!isGuest && !isHost && !isAdmin) {
       req.flash("error", "You do not have permission to view that booking.");
       return res.redirect("/bookings/my");
+    }
+
+    // Auto-update expired pending booking state if viewed after 15m hold
+    if (booking.status === "pending" && booking.paymentStatus === "pending" && booking.isExpired()) {
+      booking.status = "expired";
+      await booking.save();
+      await DailyAvailability.deleteMany({ booking: booking._id });
     }
 
     res.render("bookings/show", {
@@ -224,7 +269,7 @@ module.exports.show = async (req, res, next) => {
 };
 
 // ---------------------------------------------------------------------------
-// POST/PUT /bookings/:id/cancel — Cancel a reservation
+// POST/PUT /bookings/:id/cancel — Cancel a reservation & process verified refund
 // ---------------------------------------------------------------------------
 module.exports.cancel = async (req, res, next) => {
   try {
@@ -246,15 +291,108 @@ module.exports.cancel = async (req, res, next) => {
       return res.redirect("/bookings/my");
     }
 
+    // Idempotency: Avoid double cancellations or re-triggering refunds
     if (booking.status === "cancelled") {
-      req.flash("error", "This reservation has already been cancelled.");
+      req.flash("info", "This reservation has already been cancelled.");
       return res.redirect(`/bookings/${booking._id}`);
     }
 
+    if (booking.status === "expired") {
+      req.flash("error", "This reservation has already expired.");
+      return res.redirect(`/bookings/${booking._id}`);
+    }
+
+    // Calculate refund details according to listing policy
+    const refundDetails = refundService.calculateCancellationRefund(booking);
+    let finalRefundStatus = refundDetails.refundStatus;
+    let razorpayRefundId = undefined;
+
+    // Dispatch Razorpay refund if booking was paid and eligible for refund
+    if (refundDetails.refundAmount > 0 && booking.paymentStatus === "paid") {
+      const refundResult = await refundService.processRazorpayRefund({
+        paymentId: booking.razorpayPaymentId,
+        amountInRupees: refundDetails.refundAmount,
+        bookingId: booking._id,
+        notes: { reason: refundDetails.refundReason },
+      });
+
+      if (refundResult.success) {
+        finalRefundStatus = refundResult.status || "completed";
+        razorpayRefundId = refundResult.refundId;
+      } else {
+        finalRefundStatus = "failed";
+      }
+    }
+
     booking.status = "cancelled";
+    booking.cancelledAt = new Date();
+    booking.cancelledBy = req.user._id;
+    booking.refundStatus = finalRefundStatus;
+    booking.refundAmount = refundDetails.refundAmount;
+    booking.refundReason = refundDetails.refundReason;
+    booking.razorpayRefundId = razorpayRefundId;
+    if (finalRefundStatus === "completed") {
+      booking.refundedAt = new Date();
+    }
     await booking.save();
 
-    req.flash("success", "Your reservation has been cancelled successfully.");
+    // Idempotently update payment ledger
+    if (booking.paymentStatus === "paid") {
+      await Payment.findOneAndUpdate(
+        { booking: booking._id },
+        {
+          $set: {
+            status: finalRefundStatus === "completed" ? "refunded" : "cancelled",
+            razorpayRefundId,
+            refundAmount: refundDetails.refundAmount,
+          },
+        }
+      );
+    }
+
+    // Release daily inventory dates immediately so they become bookable
+    await DailyAvailability.deleteMany({ booking: booking._id });
+
+    // Immutable audit record
+    await auditService.recordAuditLog({
+      action: "booking.cancelled",
+      actor: req.user,
+      actorRole: req.user.role,
+      actorUsername: req.user.username,
+      targetType: "Booking",
+      targetId: booking._id,
+      metadata: {
+        refundStatus: booking.refundStatus,
+        refundAmount: booking.refundAmount,
+        razorpayRefundId: booking.razorpayRefundId,
+        policy: booking.cancellationPolicy,
+        guestId: booking.guest._id || booking.guest,
+      },
+      req,
+    });
+
+    // Send cancellation notification to guest
+    const guestUser = await User.findById(booking.guest);
+    if (guestUser) {
+      emailService.sendBookingCancellationEmail(booking, guestUser, {
+        ...refundDetails,
+        refundStatus: finalRefundStatus,
+      }).catch((e) => {
+        console.error("Booking cancellation email error:", e.message);
+      });
+    }
+
+    // Provide honest, truthful communication regarding refund confirmation
+    let flashMessage = "Your reservation has been cancelled.";
+    if (finalRefundStatus === "completed") {
+      flashMessage = `Your reservation has been cancelled and a refund of ₹${refundDetails.refundAmount.toLocaleString()} has been confirmed and processed.`;
+    } else if (finalRefundStatus === "pending") {
+      flashMessage = `Your reservation has been cancelled. A refund of ₹${refundDetails.refundAmount.toLocaleString()} is currently pending confirmation from Razorpay.`;
+    } else if (finalRefundStatus === "failed") {
+      flashMessage = `Your reservation has been cancelled. However, the automated refund failed to process and our support team has been notified.`;
+    }
+
+    req.flash("success", flashMessage);
     res.redirect(`/bookings/${booking._id}`);
   } catch (err) {
     next(err);

@@ -1,0 +1,88 @@
+<% layout("layouts/boilerplate") %>
+
+<section class="container admin-section" style="padding: 40px 24px;">
+  <div class="admin-header" style="margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h1 style="color: var(--forest-green); margin: 0 0 6px 0;">Platform Audit Trail</h1>
+      <p style="color: #666; margin: 0;">Immutable record of all critical administrative and platform actions.</p>
+    </div>
+    <div>
+      <a href="/admin" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+  </div>
+
+  <div class="card admin-table-card" style="padding: 24px;">
+    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="margin: 0; color: var(--forest-green); font-size: 1.25rem;">Total Audit Events: <%= totalCount %></h2>
+      <span style="color: #666; font-size: 0.9rem;">Page <%= currentPage %> of <%= totalPages %></span>
+    </div>
+
+    <% if (logs.length === 0) { %>
+      <div style="text-align: center; padding: 36px 20px; background: #fdfaf6; border-radius: var(--radius);">
+        <p style="color: #666; margin: 0;">No audit events recorded yet.</p>
+      </div>
+    <% } else { %>
+      <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid #eee; background: #fdfaf6;">
+              <th style="padding: 12px;">Timestamp</th>
+              <th style="padding: 12px;">Action</th>
+              <th style="padding: 12px;">Actor</th>
+              <th style="padding: 12px;">Target</th>
+              <th style="padding: 12px;">Details / Metadata</th>
+              <th style="padding: 12px;">IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% logs.forEach(log => { %>
+              <tr style="border-bottom: 1px solid #f0f0f0;">
+                <td style="padding: 12px; font-size: 0.85rem; color: #666; white-space: nowrap;">
+                  <%= new Date(log.createdAt).toLocaleString() %>
+                </td>
+                <td style="padding: 12px;">
+                  <span class="badge" style="background: #e8f0fe; color: #1a73e8; font-weight: 600; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+                    <%= log.action %>
+                  </span>
+                </td>
+                <td style="padding: 12px;">
+                  <strong><%= log.actorUsername || (log.actor && log.actor.username) || "system" %></strong>
+                  <div style="font-size: 0.75rem; color: #777;"><%= log.actorRole || "system" %></div>
+                </td>
+                <td style="padding: 12px;">
+                  <span style="font-weight: 600;"><%= log.targetType %></span>
+                  <div style="font-size: 0.75rem; color: #777; font-family: monospace;"><%= log.targetId %></div>
+                </td>
+                <td style="padding: 12px; font-size: 0.85rem;">
+                  <% if (log.metadata && Object.keys(log.metadata).length > 0) { %>
+                    <code style="background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; display: inline-block; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <%= JSON.stringify(log.metadata) %>
+                    </code>
+                  <% } else { %>
+                    <span style="color: #999;">—</span>
+                  <% } %>
+                </td>
+                <td style="padding: 12px; font-size: 0.8rem; color: #777;">
+                  <%= log.ipAddress || "—" %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <%# Pagination controls %>
+      <% if (totalPages > 1) { %>
+        <div style="margin-top: 24px; display: flex; justify-content: center; gap: 8px;">
+          <% if (currentPage > 1) { %>
+            <a href="/admin/audit-logs?page=<%= currentPage - 1 %>" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.9rem;">Previous</a>
+          <% } %>
+          <span style="padding: 6px 12px; font-size: 0.9rem; color: #555;">Page <%= currentPage %> of <%= totalPages %></span>
+          <% if (currentPage < totalPages) { %>
+            <a href="/admin/audit-logs?page=<%= currentPage + 1 %>" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.9rem;">Next</a>
+          <% } %>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+</section>

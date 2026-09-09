@@ -170,6 +170,34 @@
         </div>
       <% }) %>
     </div>
+
+    <%# Pagination Controls %>
+    <% if (typeof totalPages !== "undefined" && totalPages > 1) { %>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 40px; flex-wrap: wrap;">
+        <% if (hasPrev) { %>
+          <% const prevQuery = { ...query, page: currentPage - 1 }; %>
+          <a href="/listings?<%= new URLSearchParams(prevQuery).toString() %>" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
+            ← Previous
+          </a>
+        <% } %>
+
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <% const pageQuery = { ...query, page: i }; %>
+          <a href="/listings?<%= new URLSearchParams(pageQuery).toString() %>"
+             class="btn <%= i === currentPage ? 'btn-primary' : 'btn-secondary' %>"
+             style="padding: 8px 14px; font-size: 0.9rem; min-width: 38px; text-align: center;">
+            <%= i %>
+          </a>
+        <% } %>
+
+        <% if (hasNext) { %>
+          <% const nextQuery = { ...query, page: currentPage + 1 }; %>
+          <a href="/listings?<%= new URLSearchParams(nextQuery).toString() %>" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">
+            Next →
+          </a>
+        <% } %>
+      </div>
+    <% } %>
   <% } %>
 
 </section>

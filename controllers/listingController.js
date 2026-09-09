@@ -11,6 +11,7 @@ const Listing = require("../models/Listing");
 const Review = require("../models/Review");
 const Booking = require("../models/Booking");
 const { cloudinary } = require("../config/cloudinary");
+const { validateListingInput } = require("../middleware/validators");
 
 // ---------------------------------------------------------------------------
 // GET /listings — Public listing index with search & filters (approved only)
@@ -19,11 +20,11 @@ module.exports.index = async (req, res, next) => {
   try {
     const {
       q, propertyType, minPrice, maxPrice, guests,
-      bedrooms, country, amenities, sort,
+      bedrooms, country, amenities, sort, page: reqPage, limit: reqLimit,
     } = req.query;
 
-    // Always start with approved-only.
-    const filter = { status: "approved" };
+    // Always start with approved-only and exclude soft-deleted listings
+    const filter = { status: "approved", isDeleted: { $ne: true } };
 
     // --- Keyword search (title, description, location, country) ---
     if (q && q.trim()) {
@@ -86,7 +87,18 @@ module.exports.index = async (req, res, next) => {
     if (sort === "price_asc") sortOption = { price: 1 };
     else if (sort === "price_desc") sortOption = { price: -1 };
 
-    const listings = await Listing.find(filter).sort(sortOption);
+    // --- Pagination ---
+    const page = Math.max(1, parseInt(reqPage, 10) || 1);
+    const limit = Math.max(1, Math.min(50, parseInt(reqLimit, 10) || 12));
+    const skip = (page - 1) * limit;
+
+    const totalCount = await Listing.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / limit) || 1;
+
+    const listings = await Listing.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limit);
 
     // Check if any filters are active (used by the view to show "clear" link).
     const hasFilters = !!(
@@ -97,8 +109,13 @@ module.exports.index = async (req, res, next) => {
     res.render("listings/index", {
       title: "Explore",
       listings,
-      query: req.query,  // pass back for form repopulation
+      query: req.query, // pass back for form repopulation
       hasFilters,
+      currentPage: page,
+      totalPages,
+      totalCount,
+      hasPrev: page > 1,
+      hasNext: page < totalPages,
     });
   } catch (err) {
     next(err);
@@ -110,7 +127,7 @@ module.exports.index = async (req, res, next) => {
 // ---------------------------------------------------------------------------
 module.exports.myListings = async (req, res, next) => {
   try {
-    const listings = await Listing.find({ owner: req.user._id })
+    const listings = await Listing.find({ owner: req.user._id, isDeleted: { $ne: true } })
       .sort({ createdAt: -1 });
 
     res.render("listings/index", {
@@ -136,60 +153,40 @@ module.exports.renderNewForm = (req, res) => {
 // ---------------------------------------------------------------------------
 module.exports.create = async (req, res, next) => {
   try {
-    const {
-      title, description, price, location, country,
-      propertyType, category, maxGuests, bedrooms, bathrooms, amenities,
-    } = req.body;
+    const validation = validateListingInput(req.body);
+    if (!validation.valid) {
+      req.flash("error", validation.error);
+      return res.redirect("/listings/new");
+    }
 
-    // --- Backend validation (mirrors Mongoose but gives friendly flashes) ---
-    if (!title || !title.trim()) {
-      req.flash("error", "Title is required.");
-      return res.redirect("/listings/new");
-    }
-    if (!description || !description.trim()) {
-      req.flash("error", "Description is required.");
-      return res.redirect("/listings/new");
-    }
-    if (price === undefined || price === "" || Number(price) < 0) {
-      req.flash("error", "Price must be a non-negative number.");
-      return res.redirect("/listings/new");
-    }
-    if (!location || !location.trim()) {
-      req.flash("error", "Location is required.");
-      return res.redirect("/listings/new");
-    }
-    if (!country || !country.trim()) {
-      req.flash("error", "Country is required.");
-      return res.redirect("/listings/new");
-    }
-    if (!propertyType) {
-      req.flash("error", "Property type is required.");
-      return res.redirect("/listings/new");
-    }
-    if (!maxGuests || Number(maxGuests) < 1) {
-      req.flash("error", "Maximum guests must be at least 1.");
-      return res.redirect("/listings/new");
-    }
+    const {
+      title,
+      description,
+      price,
+      location,
+      country,
+      propertyType,
+      category,
+      maxGuests,
+      bedrooms,
+      bathrooms,
+      amenities: amenitiesList,
+    } = validation.data;
 
     // Map uploaded files (Cloudinary URLs from multer-storage-cloudinary).
     const images = req.files ? req.files.map((f) => f.path) : [];
 
-    // Amenities arrive as a comma-separated string from the form.
-    const amenitiesList = amenities
-      ? amenities.split(",").map((a) => a.trim()).filter(Boolean)
-      : [];
-
     const newListing = new Listing({
-      title: title.trim(),
-      description: description.trim(),
-      price: Number(price),
-      location: location.trim(),
-      country: country.trim(),
+      title,
+      description,
+      price,
+      location,
+      country,
       propertyType,
-      category: category ? category.trim() : "",
-      maxGuests: Number(maxGuests),
-      bedrooms: Number(bedrooms) || 0,
-      bathrooms: Number(bathrooms) || 0,
+      category,
+      maxGuests,
+      bedrooms,
+      bathrooms,
       amenities: amenitiesList,
       images,
       owner: req.user._id,
@@ -294,59 +291,41 @@ module.exports.renderEditForm = (req, res) => {
 module.exports.update = async (req, res, next) => {
   try {
     const listing = req.listing; // attached by isListingOwner middleware
-
-    const {
-      title, description, price, location, country,
-      propertyType, category, maxGuests, bedrooms, bathrooms,
-      amenities, deleteImages,
-    } = req.body;
+    const { deleteImages } = req.body;
 
     // --- Backend validation ---
-    if (!title || !title.trim()) {
-      req.flash("error", "Title is required.");
+    const validation = validateListingInput(req.body);
+    if (!validation.valid) {
+      req.flash("error", validation.error);
       return res.redirect(`/listings/${listing._id}/edit`);
     }
-    if (!description || !description.trim()) {
-      req.flash("error", "Description is required.");
-      return res.redirect(`/listings/${listing._id}/edit`);
-    }
-    if (price === undefined || price === "" || Number(price) < 0) {
-      req.flash("error", "Price must be a non-negative number.");
-      return res.redirect(`/listings/${listing._id}/edit`);
-    }
-    if (!location || !location.trim()) {
-      req.flash("error", "Location is required.");
-      return res.redirect(`/listings/${listing._id}/edit`);
-    }
-    if (!country || !country.trim()) {
-      req.flash("error", "Country is required.");
-      return res.redirect(`/listings/${listing._id}/edit`);
-    }
-    if (!propertyType) {
-      req.flash("error", "Property type is required.");
-      return res.redirect(`/listings/${listing._id}/edit`);
-    }
-    if (!maxGuests || Number(maxGuests) < 1) {
-      req.flash("error", "Maximum guests must be at least 1.");
-      return res.redirect(`/listings/${listing._id}/edit`);
-    }
+
+    const {
+      title,
+      description,
+      price,
+      location,
+      country,
+      propertyType,
+      category,
+      maxGuests,
+      bedrooms,
+      bathrooms,
+      amenities: amenitiesList,
+    } = validation.data;
 
     // Update scalar fields.
-    listing.title = title.trim();
-    listing.description = description.trim();
-    listing.price = Number(price);
-    listing.location = location.trim();
-    listing.country = country.trim();
+    listing.title = title;
+    listing.description = description;
+    listing.price = price;
+    listing.location = location;
+    listing.country = country;
     listing.propertyType = propertyType;
-    listing.category = category ? category.trim() : "";
-    listing.maxGuests = Number(maxGuests);
-    listing.bedrooms = Number(bedrooms) || 0;
-    listing.bathrooms = Number(bathrooms) || 0;
-
-    // Amenities: comma-separated string → array.
-    listing.amenities = amenities
-      ? amenities.split(",").map((a) => a.trim()).filter(Boolean)
-      : [];
+    listing.category = category;
+    listing.maxGuests = maxGuests;
+    listing.bedrooms = bedrooms;
+    listing.bathrooms = bathrooms;
+    listing.amenities = amenitiesList;
 
     // Append any newly uploaded images.
     if (req.files && req.files.length > 0) {
@@ -387,35 +366,19 @@ module.exports.update = async (req, res, next) => {
 };
 
 // ---------------------------------------------------------------------------
-// DELETE /listings/:id — Delete a listing
+// DELETE /listings/:id — Safe soft-delete / deactivate a listing
 // ---------------------------------------------------------------------------
 module.exports.destroy = async (req, res, next) => {
   try {
     const listing = req.listing; // attached by isListingOwner middleware
 
-    // Best-effort cleanup of Cloudinary images.
-    for (const imgUrl of listing.images) {
-      try {
-        const segments = imgUrl.split("/");
-        const filenameWithExt = segments[segments.length - 1];
-        const folder = segments[segments.length - 2];
-        const publicId = `${folder}/${filenameWithExt.split(".")[0]}`;
-        await cloudinary.uploader.destroy(publicId);
-      } catch (e) {
-        console.error("Cloudinary delete failed (non-fatal):", e.message);
-      }
-    }
+    // Soft deletion: Deactivate property so it is hidden from public search while preserving historical bookings, reviews, and payments.
+    listing.isDeleted = true;
+    listing.status = "archived";
+    await listing.save();
 
-    // Clean up associated reviews and bookings in the database.
-    if (listing.reviews && listing.reviews.length > 0) {
-      await Review.deleteMany({ _id: { $in: listing.reviews } });
-    }
-    await Booking.deleteMany({ listing: listing._id });
-
-    await Listing.findByIdAndDelete(listing._id);
-
-    req.flash("success", "Property deleted successfully.");
-    res.redirect("/listings");
+    req.flash("success", "Property deactivated successfully. Existing reservations and guest history remain preserved.");
+    res.redirect("/listings/my");
   } catch (err) {
     next(err);
   }

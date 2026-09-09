@@ -1,9 +1,14 @@
 <% layout("layouts/boilerplate") %>
 
 <section class="container admin-section" style="padding: 40px 24px;">
-  <div class="admin-header" style="margin-bottom: 28px;">
-    <h1 style="color: var(--forest-green); margin: 0 0 6px 0;">Admin Control Center</h1>
-    <p style="color: #666; margin: 0;">Platform overview, property review queue, booking volumes, and user management.</p>
+  <div class="admin-header" style="margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h1 style="color: var(--forest-green); margin: 0 0 6px 0;">Admin Control Center</h1>
+      <p style="color: #666; margin: 0;">Platform overview, property review queue, booking volumes, and user management.</p>
+    </div>
+    <div>
+      <a href="/admin/audit-logs" class="btn btn-secondary">📜 View Audit Logs</a>
+    </div>
   </div>
 
   <%# Platform Analytics KPI Grid %>
@@ -106,10 +111,12 @@
                   <div class="admin-table-actions">
                     <a href="/listings/<%= listing._id %>" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.85rem;">Review</a>
                     <form action="/admin/listings/<%= listing._id %>/approve?_method=PUT" method="POST">
+                      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
                       <button type="submit" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.85rem;">Approve</button>
                     </form>
                     <form action="/admin/listings/<%= listing._id %>/reject?_method=PUT" method="POST"
                           onsubmit="return confirm('Reject this property listing?');">
+                      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
                       <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.85rem;">Reject</button>
                     </form>
                   </div>

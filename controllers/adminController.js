@@ -5,6 +5,9 @@
 const Listing = require("../models/Listing");
 const User = require("../models/User");
 const Booking = require("../models/Booking");
+const AuditLog = require("../models/AuditLog");
+const auditService = require("../services/auditService");
+const emailService = require("../services/emailService");
 
 // ---------------------------------------------------------------------------
 // GET /admin — Admin dashboard (platform KPI metrics, pending approvals, recent bookings)
@@ -42,14 +45,17 @@ module.exports.dashboard = async (req, res, next) => {
         .sort({ createdAt: -1 })
         .limit(8),
       User.find().sort({ createdAt: -1 }).limit(8),
-      Booking.find({ status: { $ne: "cancelled" } }),
+      Booking.find({ paymentStatus: "paid", status: { $ne: "cancelled" } }),
     ]);
 
     const totalProperties = pendingCount + approvedCount + rejectedCount;
 
-    // Platform Financial Metrics
+    // Platform Financial Metrics: Count only paid bookings in gross volume & commissions
     const grossBookingVolume = activeBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-    const platformRevenue = activeBookings.reduce((sum, b) => sum + (b.serviceFee || 0), 0);
+    const platformRevenue = activeBookings.reduce(
+      (sum, b) => sum + (b.platformCommission || b.serviceFee || Math.round((b.totalPrice || 0) * 0.05)),
+      0
+    );
 
     res.render("admin/dashboard", {
       title: "Admin Dashboard",
@@ -78,7 +84,7 @@ module.exports.dashboard = async (req, res, next) => {
 // ---------------------------------------------------------------------------
 module.exports.approve = async (req, res, next) => {
   try {
-    const listing = await Listing.findById(req.params.id);
+    const listing = await Listing.findById(req.params.id).populate("owner", "username email");
 
     if (!listing) {
       req.flash("error", "Property not found.");
@@ -92,6 +98,26 @@ module.exports.approve = async (req, res, next) => {
 
     listing.status = "approved";
     await listing.save();
+
+    await auditService.recordAuditLog({
+      action: "listing.approved",
+      actor: req.user,
+      actorRole: req.user.role,
+      actorUsername: req.user.username,
+      targetType: "Listing",
+      targetId: listing._id,
+      metadata: {
+        title: listing.title,
+        ownerId: listing.owner ? (listing.owner._id || listing.owner) : null,
+      },
+      req,
+    });
+
+    if (listing.owner && listing.owner.email) {
+      emailService.sendListingStatusEmail(listing, listing.owner, "approved").catch((e) => {
+        console.error("Listing approval email error:", e.message);
+      });
+    }
 
     req.flash(
       "success",
@@ -108,7 +134,7 @@ module.exports.approve = async (req, res, next) => {
 // ---------------------------------------------------------------------------
 module.exports.reject = async (req, res, next) => {
   try {
-    const listing = await Listing.findById(req.params.id);
+    const listing = await Listing.findById(req.params.id).populate("owner", "username email");
 
     if (!listing) {
       req.flash("error", "Property not found.");
@@ -123,8 +149,60 @@ module.exports.reject = async (req, res, next) => {
     listing.status = "rejected";
     await listing.save();
 
+    await auditService.recordAuditLog({
+      action: "listing.rejected",
+      actor: req.user,
+      actorRole: req.user.role,
+      actorUsername: req.user.username,
+      targetType: "Listing",
+      targetId: listing._id,
+      metadata: {
+        title: listing.title,
+        ownerId: listing.owner ? (listing.owner._id || listing.owner) : null,
+      },
+      req,
+    });
+
+    if (listing.owner && listing.owner.email) {
+      emailService.sendListingStatusEmail(listing, listing.owner, "rejected").catch((e) => {
+        console.error("Listing rejection email error:", e.message);
+      });
+    }
+
     req.flash("success", `"${listing.title}" has been rejected.`);
     res.redirect("/admin");
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /admin/audit-logs — View system audit logs
+// ---------------------------------------------------------------------------
+module.exports.viewAuditLogs = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = 20;
+    const skip = (page - 1) * limit;
+
+    const [logs, totalCount] = await Promise.all([
+      AuditLog.find()
+        .populate("actor", "username email role")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      AuditLog.countDocuments(),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / limit) || 1;
+
+    res.render("admin/audit", {
+      title: "System Audit Trail",
+      logs,
+      currentPage: page,
+      totalPages,
+      totalCount,
+    });
   } catch (err) {
     next(err);
   }

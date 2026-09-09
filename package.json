@@ -6,9 +6,21 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "node scripts/test-phase12-production.js",
+    "test": "node scripts/test-phase6-integration-suite.js",
+    "test:syntax": "node scripts/check-syntax.js",
+    "test:integration": "node scripts/test-phase6-integration-suite.js",
+    "test:e2e": "node scripts/test-phase8-supertest-e2e.js",
+    "test:all": "node scripts/test-phase1-razorpay-secure.js && node scripts/test-phase2-booking-availability.js && node scripts/test-phase3-database-integrity.js && node scripts/test-phase4-security-hardening.js && node scripts/test-phase5-startup-essentials.js && node scripts/test-phase6-integration-suite.js && node scripts/test-phase7-booking-refund-correctness.js && node scripts/test-phase8-supertest-e2e.js && node scripts/test-wishlist.js",
     "test:razorpay": "node scripts/test-razorpay-payments.js",
+    "test:razorpay:secure": "node scripts/test-phase1-razorpay-secure.js",
+    "test:availability": "node scripts/test-phase2-booking-availability.js",
+    "test:integrity": "node scripts/test-phase3-database-integrity.js",
+    "test:security": "node scripts/test-phase4-security-hardening.js",
+    "test:essentials": "node scripts/test-phase5-startup-essentials.js",
+    "test:refunds": "node scripts/test-phase7-booking-refund-correctness.js",
     "test:wishlist": "node scripts/test-wishlist.js",
+    "test:phase12": "node scripts/test-phase12-production.js",
+    "verify:staging": "node scripts/verify-staging.js",
     "seed:admin": "node scripts/seedAdmin.js"
   },
   "dependencies": {
@@ -21,15 +33,18 @@
     "ejs-mate": "^4.0.0",
     "express": "^4.21.1",
     "express-session": "^1.18.1",
+    "helmet": "^8.3.0",
     "method-override": "^3.0.0",
     "mongoose": "^8.8.3",
     "multer": "^2.2.0",
     "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^10.0.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "razorpay": "^2.9.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "supertest": "^7.2.2"
   }
 }

@@ -15,7 +15,13 @@ const Listing = require("../models/Listing");
 const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const Payment = require("../models/Payment");
-const connectDB = require("../utils/db");
+
+const TEST_DB_URI = process.env.MONGODB_URI_TEST || "mongodb://127.0.0.1:27017/nestora_test_phase12";
+
+if (TEST_DB_URI.includes("production") || TEST_DB_URI.includes("atlas") || !TEST_DB_URI.includes("test")) {
+  console.error("❌ SAFETY VIOLATION: Test suite must only be executed against a dedicated test database.");
+  process.exit(1);
+}
 
 const PROD_PREFIX = "p12prod_";
 
@@ -58,7 +64,7 @@ async function runProductionTests() {
   console.log("--- NESTORA PHASE 12: FINAL PRODUCTION READINESS AUDIT ---");
   console.log("=======================================================");
 
-  await connectDB();
+  await mongoose.connect(TEST_DB_URI);
   await cleanup();
 
   const razorpaySecret = process.env.RAZORPAY_KEY_SECRET || "rzp_test_nestoraSecretKey123456";

@@ -5,6 +5,7 @@
 const Review = require("../models/Review");
 const Listing = require("../models/Listing");
 const Booking = require("../models/Booking");
+const { validateReviewInput } = require("../middleware/validators");
 
 // ---------------------------------------------------------------------------
 // POST /listings/:id/reviews — Create a review (verified guests only)
@@ -59,23 +60,18 @@ module.exports.create = async (req, res, next) => {
       return res.redirect(`/listings/${listing._id}`);
     }
 
-    const { rating, body } = req.body;
-
-    // 5. Backend Validation
-    const numericRating = Number(rating);
-    if (!rating || isNaN(numericRating) || numericRating < 1 || numericRating > 5 || !Number.isInteger(numericRating)) {
-      req.flash("error", "Rating must be an integer between 1 and 5 stars.");
+    // 5. Centralized Validation
+    const validation = validateReviewInput(req.body);
+    if (!validation.valid) {
+      req.flash("error", validation.error);
       return res.redirect(`/listings/${listing._id}`);
     }
 
-    if (!body || !body.trim()) {
-      req.flash("error", "Review text is required.");
-      return res.redirect(`/listings/${listing._id}`);
-    }
+    const { rating: numericRating, body: cleanBody } = validation.data;
 
     // 6. Create and link review
     const review = new Review({
-      body: body.trim(),
+      body: cleanBody,
       rating: numericRating,
       author: req.user._id,
       listing: listing._id,

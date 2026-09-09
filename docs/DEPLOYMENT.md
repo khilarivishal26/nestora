@@ -1,40 +1,61 @@
-# Nestora — Production Deployment Guide
+# Nestora — Production Deployment & Operations Guide
 
-This guide provides end-to-end instructions for deploying Nestora to cloud platforms (Render, Railway, Fly.io, AWS, or Docker).
+This guide provides end-to-end instructions for deploying, operating, backing up, monitoring, and rolling back Nestora on cloud platforms (Render, Railway, Fly.io, AWS, or Docker).
 
 ---
 
 ## 1. Prerequisites
 
 - **Node.js**: `v20.x` or `v22.x` LTS
-- **MongoDB**: MongoDB Atlas Cluster (v6.0+ or v7.0+)
-- **Cloudinary Account**: For cloud image storage
-- **Mapbox Account**: Public access token for interactive maps
-- **Razorpay Account**: Live or Test Key ID & Secret for payments
+- **MongoDB**: MongoDB Atlas Cluster (v6.0+ or v7.0+) with replica set support
+- **Cloudinary Account**: Cloud image hosting and optimized media delivery
+- **Mapbox Account**: Public access token for interactive stay maps
+- **Razorpay Account**: Live or Test Key ID & Secret for cryptographic payments
+- **SMTP Service**: SendGrid, AWS SES, Mailgun, Postmark, or standard SMTP credentials for transactional emails
 
 ---
 
-## 2. Required Production Environment Variables
+## 2. Production Environment Variables
 
-| Variable | Description | Source / How to Obtain |
-|---|---|---|
-| `NODE_ENV` | Must be `production` | Set manually to `production` |
-| `PORT` | HTTP port the server binds to | Default: `8080` (or platform assigned) |
-| `MONGODB_URI` | MongoDB connection string | MongoDB Atlas Dashboard &rarr; Connect |
-| `SESSION_SECRET` | 64+ char random string for session encryption | Generate via `openssl rand -hex 32` |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary account name | Cloudinary Console Dashboard |
-| `CLOUDINARY_API_KEY` | Cloudinary API Key | Cloudinary Console Dashboard |
-| `CLOUDINARY_API_SECRET` | Cloudinary API Secret | Cloudinary Console Dashboard |
-| `MAPBOX_ACCESS_TOKEN` | Mapbox public access token | Mapbox Account Dashboard |
-| `RAZORPAY_KEY_ID` | Razorpay Key ID | Razorpay Dashboard &rarr; API Keys |
-| `RAZORPAY_KEY_SECRET` | Razorpay Key Secret | Razorpay Dashboard &rarr; API Keys |
-| `RAZORPAY_WEBHOOK_SECRET` | Razorpay Webhook secret | Razorpay Dashboard &rarr; Webhooks |
+| Variable | Required | Description | Example / Source |
+|---|---|---|---|
+| `NODE_ENV` | Yes | Runtime environment | `production` |
+| `PORT` | Yes | Application port | `8080` (or platform default) |
+| `MONGODB_URI` | Yes | MongoDB Atlas connection string | `mongodb+srv://user:pass@cluster.mongodb.net/nestora?retryWrites=true&w=majority` |
+| `SESSION_SECRET` | Yes | 64+ char random key for session encryption | `openssl rand -hex 32` |
+| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary account identifier | Cloudinary Dashboard |
+| `CLOUDINARY_API_KEY` | Yes | Cloudinary public API key | Cloudinary Dashboard |
+| `CLOUDINARY_API_SECRET` | Yes | Cloudinary private secret key | Cloudinary Dashboard |
+| `MAPBOX_ACCESS_TOKEN` | Yes | Mapbox GL public client token | Mapbox Account Dashboard |
+| `RAZORPAY_KEY_ID` | Yes | Razorpay Gateway public key | Razorpay Dashboard &rarr; API Keys |
+| `RAZORPAY_KEY_SECRET` | Yes | Razorpay Gateway private HMAC key | Razorpay Dashboard &rarr; API Keys |
+| `RAZORPAY_WEBHOOK_SECRET` | Yes | Razorpay Webhook HMAC secret | Razorpay Dashboard &rarr; Webhooks |
+| `SMTP_HOST` | Optional | SMTP mail server hostname | `smtp.sendgrid.net` |
+| `SMTP_PORT` | Optional | SMTP mail port | `587` (TLS) or `465` (SSL) |
+| `SMTP_USER` | Optional | SMTP username / API key | `apikey` |
+| `SMTP_PASS` | Optional | SMTP password / API token | `SG.xxxxxxxx...` |
+| `EMAIL_FROM` | Optional | Default transactional sender address | `Nestora Stays <notifications@nestora.com>` |
+| `APP_BASE_URL` | Optional | Canonical application URL | `https://nestora.onrender.com` |
 
 ---
 
-## 3. Database Initialization & Admin Seeding
+## 3. Reproducible Builds & Package Installation
 
-After deploying and pointing to a fresh MongoDB Atlas database, seed the initial Administrator account:
+Always install dependencies using `npm ci` to guarantee that builds match `package-lock.json` precisely without version drift:
+
+```bash
+# Production install (skips devDependencies)
+npm ci --omit=dev
+
+# Development / CI install
+npm ci
+```
+
+---
+
+## 4. Database Initialization & Seeding
+
+After provisioning a fresh database, seed the initial Administrator account:
 
 ```bash
 npm run seed:admin
@@ -43,78 +64,147 @@ npm run seed:admin
 Default seeded credentials:
 - **Username:** `admin`
 - **Email:** `admin@nestora.com`
-- **Password:** `Admin@123` *(Change immediately in production)*
+- **Password:** `Admin@123` *(Must be rotated immediately upon first login)*
 
 ---
 
-## 4. Deployment Methods
+## 5. Automated Database Backup & Disaster Recovery
 
-### Option A: Render (Recommended — 1-Click via `render.yaml`)
+### 5.1 MongoDB Atlas Continuous Backups (Recommended)
+1. In the MongoDB Atlas Console, navigate to **Backup** under your cluster.
+2. Enable **Cloud Backup** with snapshot schedules:
+   - **Hourly snapshots** retained for 24 hours.
+   - **Daily snapshots** retained for 30 days.
+   - **Weekly snapshots** retained for 1 year.
+3. Enable Point-in-Time Restore (PITR) for sub-minute recovery.
 
-1. Connect your GitHub repository to [Render.com](https://render.com).
-2. Create a **New Web Service** from Blueprint (`render.yaml`).
-3. Fill in the environment variables (`MONGODB_URI`, `CLOUDINARY_*`, `MAPBOX_ACCESS_TOKEN`, `RAZORPAY_*`).
-4. Build command: `npm install`
-5. Start command: `npm start`
-6. Health check path: `/health`
-7. Click **Deploy**.
+### 5.2 Manual Snapshot via `mongodump`
+```bash
+# Export compressed archive
+mongodump --uri="$MONGODB_URI" --archive="nestora_backup_$(date +%Y%m%d_%H%M%S).gz" --gzip
 
-### Option B: Docker Container Deployment
-
-1. **Build the container image:**
-   ```bash
-   docker build -t nestora:latest .
-   ```
-2. **Run container locally with environment file:**
-   ```bash
-   docker run -d -p 8080:8080 --env-file .env --name nestora-app nestora:latest
-   ```
-3. **Verify running container:**
-   ```bash
-   docker ps
-   curl http://localhost:8080/health
-   ```
+# Restore from compressed archive
+mongorestore --uri="$MONGODB_URI" --archive="nestora_backup_20260908_120000.gz" --gzip --drop
+```
 
 ---
 
-## 5. Health Check & Monitoring
+## 6. Secret Management & Key Rotation
 
-- **Endpoint:** `GET /health`
-- **Response Format:**
+1. **Storage:**
+   - Use encrypted environment managers (Render Environment Groups, AWS Secrets Manager, Doppler, or HashiCorp Vault).
+   - Never commit `.env` or secrets into git.
+2. **Rotation Protocol:**
+   - **Razorpay Secrets:** Generate a new key in Razorpay Dashboard with dual-key grace period &rarr; Update `RAZORPAY_KEY_SECRET` in cloud env &rarr; Revoke old key.
+   - **Session Secret:** Rotating `SESSION_SECRET` will gracefully invalidate active guest sessions, prompting clean re-login.
+   - **Cloudinary / SMTP:** Rotate via respective provider dashboards and restart deployment services.
+
+---
+
+## 7. Monitoring, Observability & Health Probes
+
+### 7.1 Liveness Probe (`GET /health`)
+- **Purpose:** Verifies that the Node.js event loop is responsive.
+- **HTTP Status:** `200 OK`
+- **Payload:**
   ```json
   {
     "status": "ok",
     "service": "nestora",
-    "uptime": 124,
-    "timestamp": "2026-08-17T12:00:00.000Z",
-    "database": "connected",
+    "uptime": 3600,
+    "timestamp": "2026-09-08T20:00:00.000Z",
+    "memoryUsage": { "rss": 45123456, "heapUsed": 28456123 },
     "environment": "production"
   }
   ```
-- **HTTP Status:** `200 OK` (or `503 Service Unavailable` if database is disconnected).
+
+### 7.2 Readiness Probe (`GET /ready`)
+- **Purpose:** Validates active MongoDB database connectivity and measures round-trip latency.
+- **HTTP Status:** `200 OK` (or `503 Service Unavailable` if database disconnected).
+- **Payload:**
+  ```json
+  {
+    "status": "ready",
+    "service": "nestora",
+    "database": "connected",
+    "dbLatencyMs": 3,
+    "timestamp": "2026-09-08T20:00:00.000Z"
+  }
+  ```
+
+### 7.3 Correlation IDs & Structured Request Logs
+- Every request is tagged with an `X-Request-Id` UUID correlation header.
+- Structured JSON output enables instant ingestion by Datadog, Better Stack, CloudWatch, or Logtail:
+  ```json
+  {"timestamp":"2026-09-08T20:00:00.000Z","requestId":"3c9a1b2c-4d5e...","method":"POST","url":"/bookings/123/verify","statusCode":302,"durationMs":42,"ip":"192.0.2.1","userId":"66df...","role":"guest"}
+  ```
 
 ---
 
-## 6. Post-Deployment Verification Checklist
+## 8. Continuous Integration (CI/CD Pipeline)
 
-1. [ ] Check health status: `curl https://your-domain.com/health` returns `200 OK`
-2. [ ] Visit homepage `https://your-domain.com` and verify listings load
-3. [ ] Register a new guest user at `/register`
-4. [ ] Log in as Admin at `/login` and access `/admin`
-5. [ ] Open a property details page and verify Mapbox map loads
-6. [ ] Initiate a booking and test Razorpay Checkout modal
-7. [ ] Verify SSL certificate and HTTPS secure session cookies
+GitHub Actions workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) executes automatically on all pull requests and commits to `main`:
+1. Matrix test on **Node.js 20.x and 22.x**.
+2. Spin up ephemeral **MongoDB 7.0 service container**.
+3. Execute `npm ci` for reproducible dependency resolution.
+4. Run JavaScript syntax validation (`npm run test:syntax`).
+5. Execute end-to-end integration test suite (`npm test`).
+6. Run full regression suite (`npm run test:all`).
 
 ---
 
-## 7. Rollback Procedure
+## 9. Deployment Methods
 
-1. **Render / Railway / Cloud Provider:**
-   Navigate to Deployment History &rarr; Select previous healthy build &rarr; Click **Rollback to this revision**.
-2. **Docker / Git:**
+### Option A: Render (1-Click Blueprint via `render.yaml`)
+1. Connect repository to [Render](https://render.com).
+2. Create **New Web Service** from Blueprint.
+3. Fill in secret variables (`MONGODB_URI`, `CLOUDINARY_*`, `MAPBOX_ACCESS_TOKEN`, `RAZORPAY_*`, `SESSION_SECRET`).
+4. Build command: `npm ci --omit=dev`
+5. Start command: `npm start`
+6. Health check: `/health`
+7. Click **Deploy**.
+
+### Option B: Docker Container Deployment
+```bash
+# Build multi-stage optimized image
+docker build -t nestora:latest .
+
+# Run hardened container with non-root user
+docker run -d \
+  -p 8080:8080 \
+  --env-file .env.production \
+  --name nestora-app \
+  nestora:latest
+```
+
+---
+
+## 10. Post-Deployment Verification Checklist
+
+1. [ ] **Liveness Check:** `curl -f https://your-domain.com/health` returns `HTTP 200`.
+2. [ ] **Readiness Check:** `curl -f https://your-domain.com/ready` returns `HTTP 200` with `dbLatencyMs`.
+3. [ ] **Explore Stays:** Verify listings load with pagination, images, and Mapbox map.
+4. [ ] **User Auth:** Test Registration, Email verification link, Login, and Password reset.
+5. [ ] **Booking Hold:** Create a 15-minute booking hold and verify date overlap blocking.
+6. [ ] **Razorpay Checkout:** Verify HMAC signature verification and order ID matching.
+7. [ ] **Webhook Endpoint:** Verify Razorpay webhook triggers `payment.captured` with signature verification.
+8. [ ] **Cancellation & Refund:** Cancel a booking and verify accurate policy refund calculation.
+9. [ ] **Admin Audit Trail:** Access `/admin/audit-logs` and review immutable audit records.
+10. [ ] **Security Headers:** Verify Helmet CSP, `X-Frame-Options`, `X-Content-Type-Options`, and HTTPS cookies.
+
+---
+
+## 11. Zero-Downtime Rollback Protocols
+
+1. **Cloud Blueprint Rollback (Render / Railway / Fly.io):**
+   - Navigate to **Deployments** &rarr; Select the previous stable commit &rarr; Click **Rollback**.
+   - Deployment switches traffic instantly once new container passes `/health`.
+2. **Git & Docker Rollback:**
    ```bash
-   git checkout <previous-stable-tag>
-   npm install --omit=dev
+   git checkout <last-known-good-tag>
+   npm ci --omit=dev
    npm test
    npm start
    ```
+3. **Database Schema Rollback:**
+   All Phase 1–6 schemas maintain non-breaking backward compatibility with additive fields and soft deactivations (`isDeleted: true`).

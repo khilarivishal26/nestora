@@ -23,7 +23,7 @@ module.exports.index = async (req, res, next) => {
 
     // Filter out items where listing was deleted or is not approved
     const validItems = rawWishlist
-      .filter((item) => item.listing && item.listing.status === "approved")
+      .filter((item) => item.listing && item.listing.status === "approved" && !item.listing.isDeleted)
       .map((item) => {
         const listing = item.listing;
         let avgRating = 0;

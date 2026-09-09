@@ -69,6 +69,11 @@ const listingSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    cancellationPolicy: {
+      type: String,
+      enum: ["flexible", "moderate", "strict"],
+      default: "flexible",
+    },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -82,8 +87,14 @@ const listingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "approved", "rejected", "archived"],
       default: "pending",
+      index: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     reviews: [
       {
@@ -100,5 +111,11 @@ const listingSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// High-performance compound indexes for search, filtering, and host queries
+listingSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
+listingSchema.index({ status: 1, isDeleted: 1, price: 1 });
+listingSchema.index({ owner: 1, isDeleted: 1, createdAt: -1 });
+listingSchema.index({ status: 1, isDeleted: 1, propertyType: 1 });
 
 module.exports = mongoose.model("Listing", listingSchema);

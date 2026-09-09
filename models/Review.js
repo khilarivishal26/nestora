@@ -36,4 +36,8 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Enforce one review per eligible guest/listing at the database constraint level
+reviewSchema.index({ listing: 1, author: 1 }, { unique: true });
+reviewSchema.index({ author: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Review", reviewSchema);

@@ -27,6 +27,7 @@
         <li><a href="/profile">Hi, <%= currentUser.username %></a></li>
         <li>
           <form action="/logout" method="POST" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
             <button type="submit" class="link-button">Logout</button>
           </form>
         </li>

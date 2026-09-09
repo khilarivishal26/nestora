@@ -62,12 +62,15 @@ async function toggleWishlist(event, listingId) {
   });
 
   try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
     const res = await fetch(`/wishlist/toggle/${listingId}`, {
       method: "POST",
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "X-Requested-With": "XMLHttpRequest",
+        "X-CSRF-Token": csrfToken,
       },
     });
 

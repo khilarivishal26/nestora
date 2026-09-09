@@ -22,7 +22,13 @@ const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const Listing = require("../models/Listing");
 const Wishlist = require("../models/Wishlist");
-const connectDB = require("../utils/db");
+
+const TEST_DB_URI = process.env.MONGODB_URI_TEST || "mongodb://127.0.0.1:27017/nestora_test_wishlist";
+
+if (TEST_DB_URI.includes("production") || TEST_DB_URI.includes("atlas") || !TEST_DB_URI.includes("test")) {
+  console.error("❌ SAFETY VIOLATION: Test suite must only be executed against a dedicated test database.");
+  process.exit(1);
+}
 
 const WISH_PREFIX = "wishtest_";
 
@@ -46,7 +52,7 @@ async function runWishlistTests() {
   console.log("--- NESTORA: WISHLIST & FAVORITES FEATURE TESTS ---");
   console.log("=======================================================\n");
 
-  await connectDB();
+  await mongoose.connect(TEST_DB_URI);
   await cleanup();
 
   // --- Setup Users and Listings ---

@@ -11,7 +11,8 @@ const listingController = require("../controllers/listingController");
 const bookingController = require("../controllers/bookingController");
 const { isLoggedIn, isHost } = require("../middleware/auth");
 const { isListingOwner } = require("../middleware/listing");
-const { upload } = require("../config/cloudinary");
+const { handleImageUpload } = require("../middleware/upload");
+const { bookingLimiter } = require("../middleware/rateLimiter");
 
 // --- Public routes ---
 
@@ -31,7 +32,7 @@ router.post(
   "/",
   isLoggedIn,
   isHost,
-  upload.array("images", 5),
+  handleImageUpload,
   listingController.create
 );
 
@@ -41,7 +42,7 @@ router.post(
 router.get("/:id", listingController.show);
 
 // Create a booking for a listing (logged-in guests only).
-router.post("/:id/bookings", isLoggedIn, bookingController.create);
+router.post("/:id/bookings", isLoggedIn, bookingLimiter, bookingController.create);
 
 // Render the edit form (owner or admin only).
 router.get(
@@ -56,7 +57,7 @@ router.put(
   "/:id",
   isLoggedIn,
   isListingOwner,
-  upload.array("images", 5),
+  handleImageUpload,
   listingController.update
 );
 

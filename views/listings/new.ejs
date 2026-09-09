@@ -4,7 +4,8 @@
   <div class="card" style="max-width: 640px; margin: 0 auto;">
     <h1 style="color: var(--forest-green); margin-top: 0; text-align: center;">Add a Property</h1>
 
-    <form action="/listings" method="POST" enctype="multipart/form-data">
+    <form action="/listings?_csrf=<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
 
       <%# ---------- Title ---------- %>
       <div class="form-group">

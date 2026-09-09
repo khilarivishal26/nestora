@@ -12,8 +12,8 @@ module.exports.dashboard = async (req, res, next) => {
   try {
     const hostId = req.user._id;
 
-    // Fetch all listings owned by this host
-    const listings = await Listing.find({ owner: hostId }).sort({ createdAt: -1 });
+    // Fetch all active listings owned by this host (exclude soft-deleted)
+    const listings = await Listing.find({ owner: hostId, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
     const listingIds = listings.map((l) => l._id);
 
     // Fetch all reservations on this host's properties
@@ -28,16 +28,16 @@ module.exports.dashboard = async (req, res, next) => {
     const approvedProperties = listings.filter((l) => l.status === "approved").length;
     const rejectedProperties = listings.filter((l) => l.status === "rejected").length;
 
-    // Financial & Booking metrics
+    // Financial & Booking metrics: Count ONLY paid bookings in revenue calculations
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const activeBookings = bookings.filter((b) => b.status !== "cancelled");
-    const grossBookings = activeBookings.reduce(
+    const paidBookings = bookings.filter((b) => b.paymentStatus === "paid" && b.status !== "cancelled");
+    const grossBookings = paidBookings.reduce(
       (sum, b) => sum + (b.totalPrice || (b.nights * b.pricePerNight)),
       0
     );
-    const totalCommission = activeBookings.reduce(
+    const totalCommission = paidBookings.reduce(
       (sum, b) => sum + (b.platformCommission || b.serviceFee || Math.round((b.totalPrice || (b.nights * b.pricePerNight)) * 0.05)),
       0
     );

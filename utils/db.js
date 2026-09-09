@@ -12,8 +12,13 @@ try {
   /* Ignore if setting custom DNS servers is not supported in the host environment */
 }
 
-async function connectDB() {
-  let uri = (process.env.MONGODB_URI || "").trim();
+async function connectDB(uriOverride) {
+  // If already connected to the requested target, return existing connection
+  if (mongoose.connection.readyState === 1 && !uriOverride) {
+    return mongoose.connection;
+  }
+
+  let uri = (uriOverride || process.env.MONGODB_URI_TEST || process.env.MONGODB_URI || "").trim();
   if (!uri && process.env.NODE_ENV !== "production") {
     uri = "mongodb://127.0.0.1:27017/nestora";
   }
@@ -26,10 +31,11 @@ async function connectDB() {
 
   try {
     await mongoose.connect(uri, {
-      dbName: "nestora",
       serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
     });
     console.log(`MongoDB connected: ${mongoose.connection.name}`);
+    return mongoose.connection;
   } catch (err) {
     if (uri.startsWith("mongodb+srv://") && process.env.NODE_ENV !== "production") {
       console.warn(
@@ -37,16 +43,16 @@ async function connectDB() {
       );
       try {
         await mongoose.connect("mongodb://127.0.0.1:27017/nestora", {
-          dbName: "nestora",
           serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 5000,
         });
         console.log(`MongoDB fallback connected: ${mongoose.connection.name}`);
-        return;
+        return mongoose.connection;
       } catch (localErr) {
-        throw new Error(`Failed to connect to MongoDB: ${err.message}`);
+        throw new Error(`Failed to connect to MongoDB within 5s timeout: ${err.message} (Fallback failed: ${localErr.message})`);
       }
     }
-    throw err;
+    throw new Error(`Failed to connect to MongoDB at '${uri}' within 5s timeout: ${err.message}`);
   }
 }
 

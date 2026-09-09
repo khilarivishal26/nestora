@@ -1,0 +1,92 @@
+name: Nestora CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-test:
+    name: Syntax Validation & Integration Tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20.x, 22.x]
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install Dependencies (Reproducible npm ci)
+        run: npm ci
+
+      - name: Validate JavaScript Syntax
+        run: npm run test:syntax
+
+      - name: Run Phase 6 End-to-End Integration Suite
+        env:
+          NODE_ENV: test
+          MONGODB_URI_TEST: mongodb://127.0.0.1:27017/nestora_ci_integration_test
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: rzp_test_ci_dummy_key_secret
+          RAZORPAY_WEBHOOK_SECRET: rzp_test_ci_dummy_webhook_secret
+          SESSION_SECRET: ci_super_secure_session_secret_1234567890
+        run: npm test
+
+      - name: Run Phase 8 Supertest HTTP E2E Suite
+        env:
+          NODE_ENV: test
+          MONGODB_URI_TEST: mongodb://127.0.0.1:27017/nestora_ci_supertest_e2e
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: rzp_test_ci_dummy_key_secret
+          RAZORPAY_WEBHOOK_SECRET: rzp_test_ci_dummy_webhook_secret
+          SESSION_SECRET: ci_super_secure_session_secret_1234567890
+        run: npm run test:e2e
+
+      - name: Run Complete Multi-Phase Regression Test Suites
+        env:
+          NODE_ENV: test
+          MONGODB_URI_TEST: mongodb://127.0.0.1:27017/nestora_ci_regression_test
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: rzp_test_ci_dummy_key_secret
+          RAZORPAY_WEBHOOK_SECRET: rzp_test_ci_dummy_webhook_secret
+          SESSION_SECRET: ci_super_secure_session_secret_1234567890
+        run: npm run test:all
+
+      - name: Run Automated Staging & Closed-Beta Verification System
+        env:
+          NODE_ENV: test
+          MONGODB_URI_TEST: mongodb://127.0.0.1:27017/nestora_ci_staging_verify
+          RAZORPAY_KEY_ID: rzp_test_ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: rzp_test_ci_dummy_key_secret
+          RAZORPAY_WEBHOOK_SECRET: rzp_test_ci_dummy_webhook_secret
+          SESSION_SECRET: ci_super_secure_session_secret_1234567890
+        run: npm run verify:staging
+
+      - name: Build Docker Container Image
+        run: docker build -t nestora:ci-test .
+
